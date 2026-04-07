@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: fagierrands-assets-frontend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: BACKEND_URL
+        value: https://fagierrands-assests-backend.onrender.com
