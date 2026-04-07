@@ -5,4 +5,5 @@ django-extensions==3.2.3
 python-decouple==3.8
 whitenoise==6.6.0
 gunicorn==21.2.0
-mysqlclient==2.2.0
+psycopg[binary]>=3.1.18
+dj-database-url==2.1.0
