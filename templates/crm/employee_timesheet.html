@@ -1,0 +1,357 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Timesheet{% endblock %}
+{% block page_header %}Timesheet{% endblock %}
+{% block page_subtitle %}{{ employee.full_name }} - View your work hours and time entries{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .timesheet-summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+        }
+        
+        .summary-stat {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .summary-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .time-entry-row {
+            transition: all 0.3s ease;
+        }
+        
+        .time-entry-row:hover {
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+        
+        .work-session-complete {
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .work-session-incomplete {
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+        
+        .date-filter-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<!-- Date Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="date-filter-card p-4" data-aos="fade-up">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                    <a href="{% url 'crm:employee_timesheet' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-refresh me-2"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="timesheet-summary" data-aos="fade-up">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="summary-stat">
+                        <div class="summary-number">{{ total_hours|floatformat:1 }}</div>
+                        <div class="summary-label">Total Hours</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="summary-stat">
+                        <div class="summary-number">{{ total_days }}</div>
+                        <div class="summary-label">Days Worked</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="summary-stat">
+                        <div class="summary-number">{{ avg_hours_per_day|floatformat:1 }}</div>
+                        <div class="summary-label">Avg Hours/Day</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Work Sessions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" data-aos="fade-up">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i>Work Sessions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if work_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Punch In</th>
+                                    <th>Punch Out</th>
+                                    <th>Total Hours</th>
+                                    <th>Break Hours</th>
+                                    <th>Worked Hours</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in work_sessions %}
+                                <tr class="{% if session.is_complete %}work-session-complete{% else %}work-session-incomplete{% endif %}">
+                                    <td>
+                                        <strong>{{ session.date|date:"M d, Y" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ session.date|date:"l" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if session.punch_in %}
+                                            {{ session.punch_in|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.punch_out %}
+                                            {{ session.punch_out|time:"H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ session.total_hours|floatformat:1 }}h</td>
+                                    <td>{{ session.break_hours|floatformat:1 }}h</td>
+                                    <td>
+                                        <strong>{{ session.worked_hours|floatformat:1 }}h</strong>
+                                    </td>
+                                    <td>
+                                        {% if session.is_complete %}
+                                            <span class="badge bg-success">Complete</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No work sessions found</h5>
+                        <p class="text-muted">No work sessions recorded for the selected date range.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Time Entries -->
+<div class="row">
+    <div class="col-12">
+        <div class="card" data-aos="fade-up" data-aos-delay="100">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Detailed Time Entries
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if time_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Action</th>
+                                    <th>Location</th>
+                                    <th>Notes</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in time_entries %}
+                                <tr class="time-entry-row">
+                                    <td>
+                                        <strong>{{ entry.timestamp|date:"M d, Y" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ entry.timestamp|time:"H:i:s" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if entry.entry_type == 'punch_in' %}bg-success
+                                            {% elif entry.entry_type == 'punch_out' %}bg-danger
+                                            {% elif entry.entry_type == 'break_start' %}bg-warning
+                                            {% elif entry.entry_type == 'break_end' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ entry.get_entry_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if entry.location %}
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ entry.location }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.notes %}
+                                            {{ entry.notes|truncatechars:50 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ entry.ip_address|default:"-" }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No time entries found</h5>
+                        <p class="text-muted">No time entries recorded for the selected date range.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" data-aos="fade-up" data-aos-delay="200">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="{% url 'crm:employee_dashboard' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-tachometer-alt d-block mb-2"></i>
+                            Dashboard
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-success w-100" onclick="exportTimesheet()">
+                            <i class="fas fa-download d-block mb-2"></i>
+                            Export CSV
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-info w-100" onclick="printTimesheet()">
+                            <i class="fas fa-print d-block mb-2"></i>
+                            Print
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'crm:employee_kpis' %}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-chart-line d-block mb-2"></i>
+                            View KPIs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        function exportTimesheet() {
+            // Create CSV content
+            let csvContent = "Date,Punch In,Punch Out,Total Hours,Break Hours,Worked Hours,Status\n";
+            
+            {% for session in work_sessions %}
+            csvContent += "{{ session.date|date:'Y-m-d' }},";
+            csvContent += "{{ session.punch_in|time:'H:i'|default:'' }},";
+            csvContent += "{{ session.punch_out|time:'H:i'|default:'' }},";
+            csvContent += "{{ session.total_hours|floatformat:1 }},";
+            csvContent += "{{ session.break_hours|floatformat:1 }},";
+            csvContent += "{{ session.worked_hours|floatformat:1 }},";
+            csvContent += "{% if session.is_complete %}Complete{% else %}In Progress{% endif %}\n";
+            {% endfor %}
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'timesheet_{{ start_date|date:"Y-m-d" }}_to_{{ end_date|date:"Y-m-d" }}.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function printTimesheet() {
+            window.print();
+        }
+        
+        // Print styles
+        const printStyles = `
+            @media print {
+                .btn, .card-header, .navbar, .sidebar { display: none !important; }
+                .card { border: none !important; box-shadow: none !important; }
+                .timesheet-summary { background: #f8f9fa !important; color: #000 !important; }
+                body { font-size: 12px; }
+                .table { font-size: 11px; }
+            }
+        `;
+        
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = printStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+{% endblock %}

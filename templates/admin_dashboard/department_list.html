@@ -1,0 +1,104 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Departments - Admin Dashboard{% endblock %}
+{% block page_title %}Departments{% endblock %}
+{% block page_subtitle %}Manage organizational departments{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">Departments</h5>
+        <small class="text-muted">{{ departments|length }} total department{{ departments|length|pluralize }}</small>
+    </div>
+    <a href="{% url 'admin_dashboard:department_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add New Department
+    </a>
+</div>
+
+<!-- Departments Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-building me-2"></i>Departments
+    </div>
+    <div class="card-body">
+        {% if departments %}
+            <div class="table-responsive">
+                <table class="table table-hover datatable">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Manager</th>
+                            <th>Assets</th>
+                            <th>Users</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for department in departments %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">
+                                    <i class="fas fa-building me-2 text-primary"></i>{{ department.name }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if department.manager %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 25px; height: 25px;">
+                                            <span class="text-white small fw-bold">
+                                                {{ department.manager.first_name|first|default:department.manager.username|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div class="small fw-bold">{{ department.manager.get_full_name|default:department.manager.username }}</div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">No manager assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ department.asset_count }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ department.user_count }}</span>
+                            </td>
+                            <td>
+                                {% if department.description %}
+                                    {{ department.description|truncatewords:8 }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'admin_dashboard:department_edit' department.id %}" 
+                                       class="btn btn-outline-warning btn-sm" title="Edit Department">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'admin_dashboard:department_delete' department.id %}" 
+                                       class="btn btn-outline-danger btn-sm delete-confirm" title="Delete Department">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                <h5>No Departments Found</h5>
+                <p class="text-muted">Add departments to organize your users and assets.</p>
+                <a href="{% url 'admin_dashboard:department_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First Department
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

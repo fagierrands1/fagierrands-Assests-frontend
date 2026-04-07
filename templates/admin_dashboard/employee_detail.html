@@ -1,0 +1,264 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}{{ employee.full_name }} - Employee Details{% endblock %}
+{% block page_header %}Employee Details{% endblock %}
+{% block page_subtitle %}{{ employee.full_name }} - {{ employee.position }}{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
+    <h1>{{ employee.full_name }}</h1>
+    <div class="btn-group">
+        <a href="{% url 'admin_dashboard:task_assign' %}?employee={{ employee.id }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Assign Task
+        </a>
+        <a href="/admin-dashboard/employees/" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Employees
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Employee Information -->
+    <div class="col-md-4">
+        <div class="card animate-fade-in-left">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2" style="color: var(--primary);"></i>Employee Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="user-avatar mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h4>{{ employee.full_name }}</h4>
+                    <p class="text-muted">{{ employee.position }}</p>
+                    <span class="badge bg-{% if employee.employment_status == 'active' %}success{% elif employee.employment_status == 'inactive' %}warning{% else %}danger{% endif %}">
+                        {{ employee.get_employment_status_display }}
+                    </span>
+                </div>
+                
+                <div class="employee-info">
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-id-badge me-2"></i>Employee ID:</strong>
+                        <span class="badge bg-secondary">{{ employee.employee_id }}</span>
+                    </div>
+                    
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-envelope me-2"></i>Email:</strong>
+                        <a href="mailto:{{ employee.user.email }}">{{ employee.user.email }}</a>
+                    </div>
+                    
+                    {% if employee.phone %}
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-phone me-2"></i>Phone:</strong>
+                        {{ employee.phone }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if employee.department %}
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-building me-2"></i>Department:</strong>
+                        <span class="badge bg-info">{{ employee.department.name }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if employee.manager %}
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-user-tie me-2"></i>Manager:</strong>
+                        {{ employee.manager.full_name }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-calendar me-2"></i>Hire Date:</strong>
+                        {{ employee.hire_date|date:"M d, Y" }}
+                    </div>
+                    
+                    <div class="info-item mb-3">
+                        <strong><i class="fas fa-briefcase me-2"></i>Employment Type:</strong>
+                        {{ employee.get_employment_type_display }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tasks and Performance -->
+    <div class="col-md-8">
+        <!-- Current Month Summary -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card animate-fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="card-body text-center">
+                        <div class="stats-icon mb-3">
+                            <i class="fas fa-tasks fa-2x text-primary"></i>
+                        </div>
+                        <h4 class="stats-number">{{ recent_tasks.count }}</h4>
+                        <p class="stats-label">Active Tasks</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card animate-fade-in-up" style="animation-delay: 0.2s;">
+                    <div class="card-body text-center">
+                        <div class="stats-icon mb-3">
+                            <i class="fas fa-clock fa-2x text-success"></i>
+                        </div>
+                        <h4 class="stats-number">{{ total_hours|floatformat:1 }}</h4>
+                        <p class="stats-label">Hours This Month</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card animate-fade-in-up" style="animation-delay: 0.3s;">
+                    <div class="card-body text-center">
+                        <div class="stats-icon mb-3">
+                            <i class="fas fa-calendar-check fa-2x text-info"></i>
+                        </div>
+                        <h4 class="stats-number">{{ work_sessions.count }}</h4>
+                        <p class="stats-label">Work Sessions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Tasks -->
+        <div class="card mb-4 animate-fade-in-right">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2" style="color: var(--primary);"></i>Recent Tasks
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_tasks %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in recent_tasks %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-medium">{{ task.title }}</div>
+                                        <small class="text-muted">{{ task.description|truncatechars:40 }}</small>
+                                    </td>
+                                    <td>
+                                        {% if task.priority == 'urgent' %}
+                                            <span class="badge bg-danger">Urgent</span>
+                                        {% elif task.priority == 'high' %}
+                                            <span class="badge bg-warning">High</span>
+                                        {% elif task.priority == 'medium' %}
+                                            <span class="badge bg-primary">Medium</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if task.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif task.status == 'in_progress' %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if task.due_date %}
+                                            {{ task.due_date|date:"M d" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No tasks assigned</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Work Sessions This Month -->
+        <div class="card animate-fade-in-right" style="animation-delay: 0.2s;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2" style="color: var(--success);"></i>Work Sessions This Month
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if work_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Punch In</th>
+                                    <th>Punch Out</th>
+                                    <th>Hours</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in work_sessions %}
+                                <tr>
+                                    <td>{{ session.date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if session.punch_in %}
+                                            <span class="text-success">{{ session.punch_in|time:"H:i" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.punch_out %}
+                                            <span class="text-danger">{{ session.punch_out|time:"H:i" }}</span>
+                                        {% else %}
+                                            {% if session.punch_in %}
+                                                <span class="text-warning">Working</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.worked_hours %}
+                                            <span class="badge bg-primary">{{ session.worked_hours|floatformat:1 }}h</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.is_complete %}
+                                            <span class="badge bg-success">Complete</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No work sessions this month</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile_user.get_full_name|default:profile_user.username }} - Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-user"></i> User Profile</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>{{ profile_user.get_full_name|default:profile_user.username }}</h5>
+                            <p class="text-muted">{{ profile_user.email }}</p>
+                            
+                            {% if profile_user.profile %}
+                                <div class="mt-3">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th>Employee ID:</th>
+                                            <td>{{ profile_user.profile.employee_id|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Department:</th>
+                                            <td>{{ profile_user.profile.department|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Location:</th>
+                                            <td>{{ profile_user.profile.location|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Job Title:</th>
+                                            <td>{{ profile_user.profile.job_title|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Phone:</th>
+                                            <td>{{ profile_user.profile.phone|default:"-" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Mobile:</th>
+                                            <td>{{ profile_user.profile.mobile|default:"-" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <h6>User QR Code</h6>
+                                {% if qr_data.has_qrcode %}
+                                    <img src="{% url 'users:qr_code_image' profile_user.id %}?size=200" 
+                                         alt="User QR Code" 
+                                         class="img-fluid border rounded"
+                                         style="max-width: 200px;">
+                                    <div class="mt-2">
+                                        <a href="{% url 'users:qr_code' profile_user.id %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-qrcode"></i> View QR Code
+                                        </a>
+                                        <a href="{% url 'users:download_qr_code' profile_user.id %}?size=300" class="btn btn-success btn-sm">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">QR code generation not available</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-laptop"></i> Assigned Assets</h5>
+                </div>
+                <div class="card-body">
+                    {% if qr_data.assigned_assets %}
+                        <div class="list-group">
+                            {% for asset in qr_data.assigned_assets %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ asset.name }}</h6>
+                                        <small class="text-muted">{{ asset.asset_tag }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ asset.category|default:"No category" }}</p>
+                                    <small class="text-muted">Status: {{ asset.status }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No assets assigned</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

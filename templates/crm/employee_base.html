@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} - Employee Portal{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --employee-primary: #667eea;
+            --employee-secondary: #764ba2;
+            --employee-success: #10b981;
+            --employee-warning: #f59e0b;
+            --employee-info: #3b82f6;
+            --employee-danger: #ef4444;
+        }
+        
+        /* Hide the main navbar for employee pages */
+        .navbar.fixed-top {
+            display: none !important;
+        }
+        
+        /* Hide the sidebar for employee pages */
+        .sidebar {
+            display: none !important;
+        }
+        
+        /* Adjust main content for employee layout */
+        .main-content {
+            margin-left: 0 !important;
+            padding-top: 0 !important;
+            min-height: 100vh;
+            background: var(--gradient-page);
+        }
+        
+        /* Professional Employee Navbar */
+        .employee-navbar {
+            background: var(--gradient-primary) !important;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            height: var(--header-height);
+        }
+        
+        .employee-navbar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="employee-grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23employee-grid)"/></svg>');
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .employee-navbar .navbar-brand {
+            color: var(--white) !important;
+            font-weight: var(--font-weight-bold) !important;
+            font-size: 1.5rem !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .employee-navbar .navbar-brand i {
+            background: rgba(255, 255, 255, 0.1);
+            padding: var(--space-2);
+            border-radius: var(--border-radius);
+            margin-right: var(--space-3);
+        }
+        
+        /* Improved spacing for navbar items */
+        .employee-navbar .navbar-nav {
+            gap: var(--space-1);
+        }
+        
+        .employee-navbar .navbar-nav .nav-item {
+            margin: 0 var(--space-1);
+        }
+        
+        /* Better user dropdown styling */
+        .employee-navbar .navbar-nav .dropdown-toggle::after {
+            margin-left: var(--space-2);
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 991px) {
+            .employee-navbar .navbar-brand {
+                font-size: 1.25rem !important;
+            }
+            
+            .employee-nav-link {
+                padding: var(--space-2) var(--space-3) !important;
+                margin: var(--space-1) 0 !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .employee-navbar .navbar-brand {
+                font-size: 1.1rem !important;
+            }
+            
+            .employee-navbar .container-fluid {
+                padding-left: var(--space-3);
+                padding-right: var(--space-3);
+            }
+        }
+        
+        .employee-nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: var(--font-weight-medium) !important;
+            padding: var(--space-3) var(--space-5) !important;
+            border-radius: var(--border-radius-lg) !important;
+            margin: 0 var(--space-2) !important;
+            transition: var(--transition-normal) !important;
+            font-size: 0.9rem !important;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .employee-nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: var(--transition-slow);
+        }
+        
+        .employee-nav-link:hover::before {
+            left: 100%;
+        }
+        
+        .employee-nav-link:hover,
+        .employee-nav-link.active {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: var(--white) !important;
+            transform: translateX(4px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .employee-nav-link.active {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-left: 4px solid var(--white);
+        }
+        
+        .employee-nav-link.active::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: var(--space-3);
+            width: 6px;
+            height: 6px;
+            background: var(--white);
+            border-radius: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        .employee-nav-link i {
+            margin-right: var(--space-2) !important;
+            transition: var(--transition-normal);
+        }
+        
+        .employee-nav-link:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Employee Content Area */
+        .employee-content-area {
+            padding-top: calc(var(--header-height) + var(--space-8));
+            padding-bottom: var(--space-8);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--gradient-card);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: var(--space-8);
+            margin-bottom: var(--space-8);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+        }
+        
+        .page-header h1 {
+            color: var(--gray-900);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-2);
+            font-size: 2rem;
+        }
+        
+        .page-header p {
+            color: var(--gray-600);
+            margin-bottom: 0;
+            font-size: 1.125rem;
+        }
+        
+        /* Professional User Dropdown for Employee */
+        .employee-nav-link.dropdown-toggle {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .employee-nav-link.dropdown-toggle:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .employee-footer {
+            background: var(--gradient-primary);
+            color: var(--white);
+            padding: var(--space-6) 0;
+            margin-top: var(--space-12);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .btn-employee-primary {
+            background: var(--gradient-primary);
+            border: none;
+            color: var(--white);
+            font-weight: var(--font-weight-semibold);
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--border-radius-lg);
+            transition: var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-employee-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            color: var(--white);
+        }
+        
+        @media (max-width: 768px) {
+            .employee-content-area {
+                padding-top: calc(var(--header-height) + var(--space-4));
+                padding-left: var(--space-4);
+                padding-right: var(--space-4);
+            }
+            
+            .page-header {
+                padding: var(--space-6);
+                margin-bottom: var(--space-6);
+            }
+            
+            .page-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<!-- Professional Employee Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark employee-navbar">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'crm:employee_dashboard' %}">
+            <i class="fas fa-user-tie"></i>Employee Portal
+        </a>
+        
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#employeeNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="employeeNavbar">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:employee_dashboard' %}">
+                        <i class="fas fa-home"></i>Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:punch_in_out' %}">
+                        <i class="fas fa-clock"></i>Time
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:employee_tasks' %}">
+                        <i class="fas fa-tasks"></i>Tasks
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle employee-nav-link" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-phone"></i>Calls
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'crm:add_communication' %}">
+                                <i class="fas fa-plus me-2"></i>Log New Call
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'crm:employee_communications' %}">
+                                <i class="fas fa-list me-2"></i>View All Calls
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% if employee and employee.role == 'accountant' %}
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:money_request_list' %}">
+                        <i class="fas fa-hand-holding-usd"></i>Fund Requests
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:admin_reports' %}">
+                        <i class="fas fa-chart-bar"></i>Reports
+                    </a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link employee-nav-link" href="{% url 'crm:handler_reports' %}">
+                        <i class="fas fa-chart-bar"></i>Reports
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle employee-nav-link d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-lg me-2"></i>
+                            <span class="d-none d-md-inline">{{ user.first_name|default:user.username }}</span>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">
+                            <i class="fas fa-user me-2"></i>{{ user.get_full_name|default:user.username }}
+                        </h6></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'crm:employee_timesheet' %}">
+                                <i class="fas fa-calendar-alt me-2"></i>Timesheet
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'crm:employee_kpis' %}">
+                                <i class="fas fa-chart-line me-2"></i>Performance
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'crm:dashboard' %}">
+                                <i class="fas fa-building me-2"></i>Company View
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Professional Employee Content Area -->
+<div class="employee-content-area">
+    <div class="container">
+        <!-- Professional Page Header -->
+        <div class="page-header animate-fade-in-up">
+            <h1>{% block page_header %}Employee Workspace{% endblock %}</h1>
+            <p>{% block page_subtitle %}Your professional workspace for productivity and performance management{% endblock %}</p>
+        </div>
+        
+        <!-- Professional Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show animate-fade-in-up" role="alert" style="border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);">
+                    <i class="fas fa-info-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Professional Page Content -->
+        {% block employee_content %}
+        {% endblock %}
+    </div>
+</div>
+
+<!-- Professional Employee Footer -->
+<footer class="employee-footer">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    {% load crm_tags %}
+Professional Employee Portal - {% with employee=user|safe_employee_profile %}{{ employee.full_name|default:user.get_full_name }}{% endwith %}
+                </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <small style="opacity: 0.8;">
+                    <i class="fas fa-clock me-1"></i>
+                    System Time: <span id="last-updated"></span>
+                </small>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+        // Initialize Professional Animations
+        AOS.init({
+            duration: 600,
+            easing: 'ease-out',
+            once: true,
+            offset: 50
+        });
+        
+        // Professional Time Display
+        function updateSystemTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('last-updated').textContent = timeString;
+        }
+        
+        // Update time immediately and every second
+        updateSystemTime();
+        setInterval(updateSystemTime, 1000);
+        
+        // Professional Active Navigation Highlighting
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.employee-nav-link:not(.dropdown-toggle)');
+        
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+        });
+        
+        // Professional Auto-refresh for Real-time Updates (every 10 minutes)
+        if (window.location.pathname.includes('/employee/')) {
+            setTimeout(() => {
+                // Fade out before refresh for smooth transition
+                document.body.style.opacity = '0.8';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            }, 600000); // 10 minutes
+        }
+        
+        // Professional Loading States
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add loading class to buttons on form submission
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    const submitBtn = event.submitter || form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.classList.add('loading');
+                        // Only disable buttons that don't have a name attribute (they don't need to send data)
+                        if (!submitBtn.hasAttribute('name')) {
+                            submitBtn.disabled = true;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+    
+    <!-- Activity Monitoring System -->
+    {% load static %}
+    <script src="{% static 'js/activity_tracker.js' %}"></script>
+    
+    {% block employee_js %}
+    {% endblock %}
+{% endblock %}

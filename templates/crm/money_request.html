@@ -1,0 +1,257 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Request Funds{% endblock %}
+{% block page_header %}Request Funds{% endblock %}
+{% block page_subtitle %}Submit float or reimbursement requests to the company{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .money-request-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .money-request-row {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .money-request-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .money-request-remove {
+            margin-top: 1.9rem;
+        }
+
+        .money-request-total {
+            font-weight: 600;
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="money-request-card" data-aos="fade-up">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+                    <div>
+                        <h4 class="mb-1">
+                            <i class="fas fa-hand-holding-usd text-success me-2"></i>
+                            Company Fund Request
+                        </h4>
+                       
+                    </div>
+                    <span class="badge bg-primary align-self-start align-self-lg-center">{{ request.user.get_full_name|default:request.user.username }}</span>
+                </div>
+
+                <div id="money-request-rows">
+                    <div class="row g-3 align-items-end money-request-row" data-index="0">
+                        <div class="col-md-3">
+                            <label class="form-label">From</label>
+                            <input type="text" class="form-control" name="money_request_from[]" placeholder="e.g., Nextgen" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">To</label>
+                            <input type="text" class="form-control" name="money_request_to[]" placeholder="e.g., Imaara" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="money_request_date[]" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Amount (KSh)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">KSh</span>
+                                <input type="number" class="form-control money-request-amount" name="money_request_amount[]" value="100" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-end">
+                            <button type="button" class="btn btn-outline-danger btn-sm money-request-remove" title="Remove request">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-money-request">
+                        <i class="fas fa-plus me-1"></i>Add another request
+                    </button>
+                    <div class="money-request-total-wrapper">
+                        <label class="form-label mb-1">Total Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">KSh</span>
+                            <input type="number" class="form-control money-request-total" id="money-request-total" name="money_request_total" value="100" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="money_request_notes" class="form-label">Additional Notes (optional)</label>
+                    <textarea class="form-control" name="money_request_notes" id="money_request_notes" rows="4" placeholder="Provide context for this request..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-between flex-wrap gap-2">
+                    <a href="{% url 'crm:employee_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if money_requests %}
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-10">
+        <div class="money-request-card" data-aos="fade-up">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fas fa-history text-primary me-2"></i>My Fund Requests</h5>
+                <span class="badge bg-secondary">{{ money_requests|length }} total</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Submitted</th>
+                            <th scope="col">From</th>
+                            <th scope="col">To</th>
+                            <th scope="col">Request Date</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for money_request in money_requests %}
+                        <tr>
+                            <td>{{ money_request.created_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ money_request.from_entity }}</td>
+                            <td>{{ money_request.to_entity }}</td>
+                            <td>{{ money_request.request_date|date:"M d, Y" }}</td>
+                            <td>KSh {{ money_request.amount }}</td>
+                            <td>
+                                <span class="badge bg-{% if money_request.status == 'approved' %}success{% elif money_request.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                    {{ money_request.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if money_request.status == 'pending' %}
+                                    <span class="text-muted small">Pending approval</span>
+                                {% else %}
+                                    <div class="small">
+                                        <div>By: {% if money_request.processed_by %}{{ money_request.processed_by.full_name }}{% else %}N/A{% endif %}</div>
+                                        <div>On: {{ money_request.processed_at|date:"M d, Y H:i" }}</div>
+                                        {% if money_request.decision_notes %}
+                                        <div class="text-muted mt-1">Note: {{ money_request.decision_notes }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        const moneyRequestContainer = document.getElementById('money-request-rows');
+        if (moneyRequestContainer) {
+            const addMoneyRequestBtn = document.getElementById('add-money-request');
+            const moneyRequestTotal = document.getElementById('money-request-total');
+            const defaultAmount = 100;
+
+            const updateRemoveButtons = () => {
+                const rows = moneyRequestContainer.querySelectorAll('.money-request-row');
+                rows.forEach(row => {
+                    const removeBtn = row.querySelector('.money-request-remove');
+                    if (removeBtn) {
+                        removeBtn.style.visibility = rows.length === 1 ? 'hidden' : 'visible';
+                    }
+                });
+            };
+
+            const updateMoneyRequestTotal = () => {
+                const rows = moneyRequestContainer.querySelectorAll('.money-request-row');
+                const total = rows.length * defaultAmount;
+                moneyRequestTotal.value = total;
+            };
+
+            const bindMoneyRequestRow = (row) => {
+                const removeBtn = row.querySelector('.money-request-remove');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', () => {
+                        row.remove();
+                        updateRemoveButtons();
+                        updateMoneyRequestTotal();
+                    });
+                }
+            };
+
+            const createMoneyRequestRow = () => {
+                const row = document.createElement('div');
+                row.className = 'row g-3 align-items-end money-request-row';
+                row.innerHTML = `
+                    <div class="col-md-3">
+                        <label class="form-label">From</label>
+                        <input type="text" class="form-control" name="money_request_from[]" placeholder="e.g., Nextgen" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To</label>
+                        <input type="text" class="form-control" name="money_request_to[]" placeholder="e.g., Imaara" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" name="money_request_date[]" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Amount (KSh)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">KSh</span>
+                            <input type="number" class="form-control money-request-amount" name="money_request_amount[]" value="${defaultAmount}" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-1 d-flex justify-content-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm money-request-remove" title="Remove request">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                return row;
+            };
+
+            addMoneyRequestBtn.addEventListener('click', () => {
+                const newRow = createMoneyRequestRow();
+                moneyRequestContainer.appendChild(newRow);
+                bindMoneyRequestRow(newRow);
+                updateRemoveButtons();
+                updateMoneyRequestTotal();
+            });
+
+            Array.from(moneyRequestContainer.querySelectorAll('.money-request-row')).forEach(bindMoneyRequestRow);
+            updateRemoveButtons();
+            updateMoneyRequestTotal();
+        }
+    </script>
+{% endblock %}
+

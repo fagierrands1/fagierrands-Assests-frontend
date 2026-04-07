@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="fas fa-ban"></i> Access Denied</h4>
+                </div>
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h5>You don't have permission to access this page.</h5>
+                    <p class="text-muted">You can only view your own profile or must be a staff member to view other profiles.</p>
+                    <a href="{% url 'root_redirect' %}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

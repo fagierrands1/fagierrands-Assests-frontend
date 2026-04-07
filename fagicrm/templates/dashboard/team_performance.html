@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Team Performance - FAGI CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Team Performance</h1>
+            <p class="text-muted">{{ employee.full_name }} - {{ employee.department.name }} Department</p>
+        </div>
+    </div>
+
+    <!-- Team Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card card-metric">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ team_performance|length }}</h3>
+                    <p class="text-muted mb-0">Team Members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric success">
+                <div class="card-body text-center">
+                    {% with total_revenue=0 %}
+                        {% for member in team_performance %}
+                            {% with total_revenue=total_revenue|add:member.kpi.revenue_generated %}{% endwith %}
+                        {% endfor %}
+                        <h3 class="text-success">${{ total_revenue|floatformat:2 }}</h3>
+                    {% endwith %}
+                    <p class="text-muted mb-0">Total Revenue</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric warning">
+                <div class="card-body text-center">
+                    {% with total_deals=0 %}
+                        {% for member in team_performance %}
+                            {% with total_deals=total_deals|add:member.kpi.deals_closed %}{% endwith %}
+                        {% endfor %}
+                        <h3 class="text-warning">{{ total_deals }}</h3>
+                    {% endwith %}
+                    <p class="text-muted mb-0">Total Deals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-metric">
+                <div class="card-body text-center">
+                    {% with avg_score=0 count=0 %}
+                        {% for member in team_performance %}
+                            {% with avg_score=avg_score|add:member.kpi.overall_score count=count|add:1 %}{% endwith %}
+                        {% endfor %}
+                        {% if count > 0 %}
+                            <h3 class="text-info">{{ avg_score|div:count|floatformat:1 }}%</h3>
+                        {% else %}
+                            <h3 class="text-info">0%</h3>
+                        {% endif %}
+                    {% endwith %}
+                    <p class="text-muted mb-0">Avg Performance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Performance Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Team Performance Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="teamChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Individual Performance ({{ current_month|date:"F Y" }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Position</th>
+                                    <th>Overall Score</th>
+                                    <th>Revenue</th>
+                                    <th>Deals</th>
+                                    <th>Conversion Rate</th>
+                                    <th>Customer Satisfaction</th>
+                                    <th>Sales Target</th>
+                                    <th>Activity Target</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in team_performance %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-2">
+                                                {{ member.employee.user.first_name|first }}{{ member.employee.user.last_name|first }}
+                                            </div>
+                                            <div>
+                                                <strong>{{ member.employee.full_name }}</strong><br>
+                                                <small class="text-muted">{{ member.employee.employee_id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ member.employee.position }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge {% if member.kpi.overall_score >= 90 %}bg-success{% elif member.kpi.overall_score >= 70 %}bg-warning{% else %}bg-danger{% endif %} me-2">
+                                                {{ member.kpi.overall_score|floatformat:1 }}%
+                                            </span>
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar {% if member.kpi.overall_score >= 90 %}bg-success{% elif member.kpi.overall_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ member.kpi.overall_score }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>${{ member.kpi.revenue_generated|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ member.kpi.deals_closed }}</span>
+                                    </td>
+                                    <td>{{ member.kpi.conversion_rate|floatformat:1 }}%</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-1">{{ member.kpi.customer_satisfaction|floatformat:1 }}/5.0</span>
+                                            <div class="text-warning">
+                                                {% for i in "12345" %}
+                                                    {% if forloop.counter <= member.kpi.customer_satisfaction %}
+                                                        <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                        <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if member.kpi.sales_target_achievement >= 100 %}bg-success{% elif member.kpi.sales_target_achievement >= 80 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ member.kpi.sales_target_achievement|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if member.kpi.activity_target_achievement >= 100 %}bg-success{% elif member.kpi.activity_target_achievement >= 80 %}bg-info{% else %}bg-warning{% endif %}">
+                                            {{ member.kpi.activity_target_achievement|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'dashboard:employee_kpi_detail' member.employee.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-chart-line"></i> View KPIs
+                                            </a>
+                                            <a href="/admin/employees/employee/{{ member.employee.id }}/change/" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p>No team members found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+</style>
+
+<script>
+// Team Performance Chart
+const teamCtx = document.getElementById('teamChart').getContext('2d');
+new Chart(teamCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for member in team_performance %}
+            '{{ member.employee.user.first_name }} {{ member.employee.user.last_name|first }}.'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Overall Score (%)',
+            data: [
+                {% for member in team_performance %}
+                {{ member.kpi.overall_score }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(0, 123, 255, 0.8)',
+            borderColor: '#007bff',
+            borderWidth: 1
+        }, {
+            label: 'Sales Target Achievement (%)',
+            data: [
+                {% for member in team_performance %}
+                {{ member.kpi.sales_target_achievement }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+            borderColor: '#28a745',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

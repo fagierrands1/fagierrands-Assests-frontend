@@ -1,0 +1,76 @@
+<!-- New Maintenance Modal -->
+<div class="modal fade" id="newMaintenanceModal" tabindex="-1" aria-labelledby="newMaintenanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newMaintenanceModalLabel">Schedule New Maintenance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'asset_schedule_maintenance' asset.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new_maintenance_type" class="form-label">Maintenance Type *</label>
+                                <select class="form-select" id="new_maintenance_type" name="maintenance_type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="preventive">Preventive</option>
+                                    <option value="corrective">Corrective</option>
+                                    <option value="emergency">Emergency</option>
+                                    <option value="upgrade">Upgrade</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new_scheduled_date" class="form-label">Scheduled Date *</label>
+                                <input type="datetime-local" class="form-control" id="new_scheduled_date" name="scheduled_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_maintenance_title" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="new_maintenance_title" name="title" required placeholder="Brief description of maintenance">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_maintenance_description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="new_maintenance_description" name="description" rows="4" required placeholder="Detailed description of maintenance work to be performed..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new_performed_by" class="form-label">Assigned To</label>
+                                <select class="form-select" id="new_performed_by" name="performed_by">
+                                    <option value="">Select technician...</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="new_estimated_cost" class="form-label">Estimated Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="new_estimated_cost" name="cost" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_maintenance_notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="new_maintenance_notes" name="notes" rows="2" placeholder="Any additional notes or special instructions..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus me-1"></i>Schedule Maintenance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

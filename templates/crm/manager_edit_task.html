@@ -1,0 +1,167 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Edit Task{% endblock %}
+{% block page_header %}Edit Task{% endblock %}
+{% block page_subtitle %}Update task details and assignment{% endblock %}
+
+{% block employee_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2 text-primary"></i>Edit Task: {{ task.title }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Task Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               value="{{ task.title }}">
+                    </div>
+                    
+                    <!-- Task Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required>{{ task.description }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Assign To -->
+                        <div class="col-md-6 mb-3">
+                            <label for="assigned_to" class="form-label">Assign To <span class="text-danger">*</span></label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                {% for emp in employees %}
+                                    <option value="{{ emp.id }}" {% if emp.id == task.assigned_to.id %}selected{% endif %}>
+                                        {{ emp.full_name }} - {{ emp.position }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Priority -->
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                            <select class="form-select" id="priority" name="priority" required>
+                                {% for value, label in priority_choices %}
+                                    <option value="{{ value }}" {% if value == task.priority %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Status -->
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="status" name="status" required>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if value == task.status %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Due Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="due_date" name="due_date"
+                                   value="{% if task.due_date %}{{ task.due_date|date:'Y-m-d\TH:i' }}{% endif %}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Estimated Hours -->
+                        <div class="col-md-6 mb-3">
+                            <label for="estimated_hours" class="form-label">Estimated Hours</label>
+                            <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" 
+                                   step="0.5" min="0" value="{{ task.estimated_hours|default:'' }}">
+                        </div>
+                        
+                        <!-- Actual Hours -->
+                        <div class="col-md-6 mb-3">
+                            <label for="actual_hours" class="form-label">Actual Hours</label>
+                            <input type="number" class="form-control" id="actual_hours" name="actual_hours" 
+                                   step="0.5" min="0" value="{{ task.actual_hours|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Related Objects -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2">Linked To</h6>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Customer -->
+                        <div class="col-md-4 mb-3">
+                            <label for="customer" class="form-label">Customer</label>
+                            <select class="form-select" id="customer" name="customer">
+                                <option value="">None</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.id }}" {% if task.customer and customer.id == task.customer.id %}selected{% endif %}>
+                                        {{ customer.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Lead -->
+                        <div class="col-md-4 mb-3">
+                            <label for="lead" class="form-label">Lead</label>
+                            <select class="form-select" id="lead" name="lead">
+                                <option value="">None</option>
+                                {% for lead in leads %}
+                                    <option value="{{ lead.id }}" {% if task.lead and lead.id == task.lead.id %}selected{% endif %}>
+                                        {{ lead.company }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Asset -->
+                        <div class="col-md-4 mb-3">
+                            <label for="asset" class="form-label">Asset</label>
+                            <select class="form-select" id="asset" name="asset">
+                                <option value="">None</option>
+                                {% for asset in assets %}
+                                    <option value="{{ asset.id }}" {% if task.asset and asset.id == task.asset.id %}selected{% endif %}>
+                                        {{ asset.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Task Metadata -->
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>Created:</strong> {{ task.created_at|date:"M d, Y H:i" }}
+                            {% if task.assigned_by %}
+                                by {{ task.assigned_by.get_full_name }}
+                            {% endif %}
+                            <br>
+                            <strong>Last Updated:</strong> {{ task.updated_at|date:"M d, Y H:i" }}
+                            {% if task.completed_at %}
+                                <br><strong>Completed:</strong> {{ task.completed_at|date:"M d, Y H:i" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'crm:manager_task_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Tasks
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

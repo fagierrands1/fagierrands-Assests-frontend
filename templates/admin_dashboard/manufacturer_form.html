@@ -1,0 +1,115 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ title }} - Admin Dashboard{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% if manufacturer %}Edit manufacturer information{% else %}Create a new manufacturer{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-industry me-2"></i>Manufacturer Information
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Manufacturer Name *</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.website.id_for_label }}" class="form-label">Website</label>
+                        {{ form.website }}
+                        {% if form.website.errors %}
+                            <div class="text-danger small">{{ form.website.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Include http:// or https://</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.support_email.id_for_label }}" class="form-label">Support Email</label>
+                            {{ form.support_email }}
+                            {% if form.support_email.errors %}
+                                <div class="text-danger small">{{ form.support_email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.support_phone.id_for_label }}" class="form-label">Support Phone</label>
+                            {{ form.support_phone }}
+                            {% if form.support_phone.errors %}
+                                <div class="text-danger small">{{ form.support_phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'admin_dashboard:manufacturer_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Manufacturers
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>{% if manufacturer %}Update Manufacturer{% else %}Create Manufacturer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Help
+            </div>
+            <div class="card-body">
+                <h6>Manufacturer Information</h6>
+                <p class="small">Add manufacturers to organize your asset models and track support information.</p>
+                
+                <h6 class="mt-3">Support Information</h6>
+                <p class="small">Support email and phone numbers help with warranty claims and technical support.</p>
+                
+                <h6 class="mt-3">Common Manufacturers</h6>
+                <ul class="list-unstyled small">
+                    <li>• Dell</li>
+                    <li>• HP</li>
+                    <li>• Lenovo</li>
+                    <li>• Apple</li>
+                    <li>• Cisco</li>
+                    <li>• Microsoft</li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if manufacturer %}
+        <!-- Manufacturer Statistics -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Statistics
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-primary">{{ manufacturer.assetmodel_set.count }}</h5>
+                            <small class="text-muted">Models</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-success">{{ manufacturer.assetmodel_set.all|length }}</h5>
+                        <small class="text-muted">Total Assets</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

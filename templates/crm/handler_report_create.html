@@ -1,0 +1,183 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Create Daily Report{% endblock %}
+{% block page_header %}Create Daily Report{% endblock %}
+{% block page_subtitle %}Submit your daily performance metrics{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 0.5rem;
+            color: #6366f1;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+        }
+        
+        .input-group-text {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .info-box small {
+            color: #1e40af;
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card" data-aos="fade-up">
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Report Date Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-calendar"></i>
+                        Report Date
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="report_date" class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="report_date" id="report_date" required>
+                            <small class="form-text text-muted">Select the date you're reporting for</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Your Weekly Target</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-bullseye"></i></span>
+                                <input type="text" class="form-control" value="{{ employee.weekly_target }} calls" disabled>
+                            </div>
+                           
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="weekly_target" value="{{ employee.daily_target }}">
+                </div>
+
+                <!-- Performance Metrics Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Performance Metrics
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="calls_made" class="form-label">Calls Made <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="calls_made" id="calls_made" value="0" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="successful_calls" class="form-label">Successful Calls <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="successful_calls" id="successful_calls" value="0" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-check-circle"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="errands_made" class="form-label">Errands Made <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="errands_made" id="errands_made" value="0" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-tasks"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <small><i class="fas fa-info-circle me-2"></i>Success Rate: <span id="success-rate">0%</span></small>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-sticky-note"></i>
+                        Additional Notes
+                    </h4>
+                    
+                    <label for="notes" class="form-label">Notes (Optional)</label>
+                    <textarea class="form-control" name="notes" id="notes" rows="4" placeholder="Add any additional comments about this day..."></textarea>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'crm:handler_reports' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Create Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        function updateSuccessRate() {
+            const callsMade = parseInt(document.getElementById('calls_made').value) || 0;
+            const successfulCalls = parseInt(document.getElementById('successful_calls').value) || 0;
+            
+            let rate = 0;
+            if (callsMade > 0) {
+                rate = Math.round((successfulCalls / callsMade) * 100);
+            }
+            
+            document.getElementById('success-rate').textContent = rate + '%';
+        }
+        
+        document.getElementById('calls_made').addEventListener('input', updateSuccessRate);
+        document.getElementById('successful_calls').addEventListener('input', updateSuccessRate);
+    </script>
+{% endblock %}

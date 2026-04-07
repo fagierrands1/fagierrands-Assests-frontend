@@ -1,0 +1,23 @@
+# cPanel Python App .htaccess
+# This file configures Apache to use Passenger for Python
+
+PassengerEnabled On
+PassengerAppRoot /home/yourusername/fagicrm.fagitone.com
+
+# Redirect all requests to the Python app
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,PT,L]
+
+# Serve static files directly
+RewriteCond %{REQUEST_URI} ^/static/
+RewriteRule ^(.*)$ - [L]
+
+# Serve media files directly
+RewriteCond %{REQUEST_URI} ^/media/
+RewriteRule ^(.*)$ - [L]
+
+# Force HTTPS (optional but recommended)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

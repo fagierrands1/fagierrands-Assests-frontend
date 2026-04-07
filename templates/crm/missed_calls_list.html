@@ -1,0 +1,279 @@
+{% extends 'crm/employee_base.html' %}
+{% load static %}
+
+{% block title %}My Missed Calls - Employee Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-phone-slash"></i> My Missed Calls</h2>
+                <a href="{% url 'crm:log_missed_call' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Log Missed Call
+                </a>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Calls</h5>
+                            <h2 class="mb-0">{{ total_calls }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Pending Callbacks</h5>
+                            <h2 class="mb-0">{{ pending_calls }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Overdue</h5>
+                            <h2 class="mb-0">{{ overdue_calls }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Completed</h5>
+                            <h2 class="mb-0">{{ completed_calls }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" onchange="this.form.submit()">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-select" id="priority" name="priority" onchange="this.form.submit()">
+                                <option value="">All Priorities</option>
+                                {% for value, label in priority_choices %}
+                                    <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <a href="{% url 'crm:missed_calls_list' %}" class="btn btn-secondary w-100">
+                                <i class="fas fa-redo"></i> Clear Filters
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Missed Calls Table -->
+            <div class="card">
+                <div class="card-body">
+                    {% if missed_calls %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Caller</th>
+                                        <th>Phone</th>
+                                        <th>Company</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Missed At</th>
+                                        <th>Callback Scheduled</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for call in missed_calls %}
+                                        <tr {% if call.is_overdue %}class="table-danger"{% endif %}>
+                                            <td>
+                                                <strong>{{ call.caller_name }}</strong>
+                                                {% if call.customer %}
+                                                    <br><small class="text-muted"><i class="fas fa-user"></i> Customer</small>
+                                                {% elif call.lead %}
+                                                    <br><small class="text-muted"><i class="fas fa-user-plus"></i> Lead</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ call.caller_phone }}</td>
+                                            <td>{{ call.caller_company|default:"-" }}</td>
+                                            <td>
+                                                {% if call.priority == 'urgent' %}
+                                                    <span class="badge bg-danger">Urgent</span>
+                                                {% elif call.priority == 'high' %}
+                                                    <span class="badge bg-warning">High</span>
+                                                {% elif call.priority == 'medium' %}
+                                                    <span class="badge bg-info">Medium</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Low</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if call.status == 'pending' %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% elif call.status == 'attempted' %}
+                                                    <span class="badge bg-info">Attempted</span>
+                                                {% elif call.status == 'completed' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">No Callback Needed</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ call.missed_at|date:"M d, Y" }}<br>
+                                                <small class="text-muted">{{ call.missed_at|time:"g:i A" }}</small>
+                                            </td>
+                                            <td>
+                                                {% if call.callback_scheduled_at %}
+                                                    {{ call.callback_scheduled_at|date:"M d, Y" }}<br>
+                                                    <small class="text-muted">{{ call.callback_scheduled_at|time:"g:i A" }}</small>
+                                                    {% if call.is_overdue %}
+                                                        <br><span class="badge bg-danger">Overdue</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">Not scheduled</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{% url 'crm:edit_missed_call' call.id %}" class="btn btn-outline-primary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger delete-call" data-call-id="{{ call.id }}" data-caller-name="{{ call.caller_name }}" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% if call.reason_for_call %}
+                                            <tr>
+                                                <td colspan="8" class="bg-light">
+                                                    <small><strong>Reason:</strong> {{ call.reason_for_call }}</small>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if missed_calls.has_other_pages %}
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    {% if missed_calls.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ missed_calls.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in missed_calls.paginator.page_range %}
+                                        {% if missed_calls.number == num %}
+                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                        {% elif num > missed_calls.number|add:'-3' and num < missed_calls.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if missed_calls.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ missed_calls.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-phone-slash fa-3x text-muted mb-3"></i>
+                            <h4>No Missed Calls</h4>
+                            <p class="text-muted">You haven't logged any missed calls yet.</p>
+                            <a href="{% url 'crm:log_missed_call' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Log Your First Missed Call
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the missed call from <strong id="callerName"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-call');
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const callerNameSpan = document.getElementById('callerName');
+    const confirmDeleteBtn = document.getElementById('confirmDelete');
+    let callIdToDelete = null;
+
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            callIdToDelete = this.dataset.callId;
+            callerNameSpan.textContent = this.dataset.callerName;
+            deleteModal.show();
+        });
+    });
+
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (callIdToDelete) {
+            fetch(`/crm/missed-calls/${callIdToDelete}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('Error deleting missed call: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error deleting missed call');
+                console.error('Error:', error);
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

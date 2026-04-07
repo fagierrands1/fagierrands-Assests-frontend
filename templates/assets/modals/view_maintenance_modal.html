@@ -1,0 +1,130 @@
+<!-- View Maintenance Modal -->
+<div class="modal fade" id="viewMaintenanceModal{{ maintenance.id }}" tabindex="-1" aria-labelledby="viewMaintenanceModalLabel{{ maintenance.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewMaintenanceModalLabel{{ maintenance.id }}">Maintenance Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td><strong>Title:</strong></td>
+                                <td>{{ maintenance.title }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type:</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if maintenance.maintenance_type == 'preventive' %}info{% elif maintenance.maintenance_type == 'corrective' %}warning{% elif maintenance.maintenance_type == 'emergency' %}danger{% else %}secondary{% endif %}">
+                                        {{ maintenance.get_maintenance_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if maintenance.status == 'completed' %}success{% elif maintenance.status == 'in_progress' %}warning{% elif maintenance.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                        {{ maintenance.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Scheduled Date:</strong></td>
+                                <td>{{ maintenance.scheduled_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% if maintenance.completed_date %}
+                            <tr>
+                                <td><strong>Completed Date:</strong></td>
+                                <td>{{ maintenance.completed_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Assignment & Cost</h6>
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <td><strong>Performed By:</strong></td>
+                                <td>
+                                    {% if maintenance.performed_by %}
+                                        {{ maintenance.performed_by.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cost:</strong></td>
+                                <td>
+                                    {% if maintenance.cost %}
+                                        ${{ maintenance.cost }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Created:</strong></td>
+                                <td>{{ maintenance.created_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Last Updated:</strong></td>
+                                <td>{{ maintenance.updated_at|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if maintenance.description %}
+                <div class="mt-3">
+                    <h6>Description</h6>
+                    <div class="bg-light p-3 rounded">
+                        {{ maintenance.description|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if maintenance.notes %}
+                <div class="mt-3">
+                    <h6>Notes</h6>
+                    <div class="bg-light p-3 rounded">
+                        {{ maintenance.notes|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Duration calculation -->
+                {% if maintenance.completed_date and maintenance.scheduled_date %}
+                <div class="mt-3">
+                    <h6>Duration</h6>
+                    <p class="text-muted">
+                        {% with duration=maintenance.completed_date|timesince:maintenance.scheduled_date %}
+                            Maintenance took {{ duration }}
+                        {% endwith %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {% if maintenance.status != 'completed' and maintenance.status != 'cancelled' %}
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#editMaintenanceModal{{ maintenance.id }}">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                {% endif %}
+                {% if maintenance.status == 'scheduled' %}
+                <button type="button" class="btn btn-warning" onclick="updateMaintenanceStatus({{ maintenance.id }}, 'in_progress')" data-bs-dismiss="modal">
+                    <i class="fas fa-play me-1"></i>Start Maintenance
+                </button>
+                {% elif maintenance.status == 'in_progress' %}
+                <button type="button" class="btn btn-success" onclick="updateMaintenanceStatus({{ maintenance.id }}, 'completed')" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-1"></i>Mark Complete
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

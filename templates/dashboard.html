@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Corporate Business Management Dashboard{% endblock %}
+
+{% block content %}
+<!-- Professional Corporate Hero Section -->
+<div class="hero-section animate-fade-in-up">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">Corporate Business Management</h1>
+                <p class="hero-subtitle">Advanced enterprise-grade platform for comprehensive asset lifecycle management and customer relationship optimization</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="d-flex flex-column flex-lg-row gap-3">
+                    <a href="{% url 'crm:dashboard' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-chart-line me-2"></i>CRM Analytics
+                    </a>
+                    <a href="{% url 'asset_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-server me-2"></i>Asset Portfolio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Professional Corporate Analytics -->
+<div class="container">
+    <div class="row mb-5">
+        <!-- Asset Portfolio Metrics -->
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="stats-number">{{ stats.total_assets|default:0 }}</div>
+                <div class="stats-label">Asset Portfolio</div>
+                <div class="stats-icon">
+                    <i class="fas fa-server fa-2x"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card success animate-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="stats-number">{{ stats.active_assets|default:0 }}</div>
+                <div class="stats-label">Active Assets</div>
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle fa-2x" style="color: var(--success);"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Relationship Metrics -->
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card info animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="stats-number">{{ crm_stats.total_customers|default:0 }}</div>
+                <div class="stats-label">Client Base</div>
+                <div class="stats-icon">
+                    <i class="fas fa-building fa-2x" style="color: var(--info);"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card warning animate-fade-in-up" style="animation-delay: 0.4s;">
+                <div class="stats-number">{{ crm_stats.total_leads|default:0 }}</div>
+                <div class="stats-label">Sales Pipeline</div>
+                <div class="stats-icon">
+                    <i class="fas fa-chart-line fa-2x" style="color: var(--warning);"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integration & Operations Metrics -->
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card animate-fade-in-up" style="animation-delay: 0.5s;">
+                <div class="stats-number">{{ crm_stats.total_assignments|default:0 }}</div>
+                <div class="stats-label">Asset Deployments</div>
+                <div class="stats-icon">
+                    <i class="fas fa-network-wired fa-2x"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+            <div class="stats-card success animate-fade-in-up" style="animation-delay: 0.6s;">
+                <div class="stats-number">{{ stats.total_users|default:0 }}</div>
+                <div class="stats-label">System Users</div>
+                <div class="stats-icon">
+                    <i class="fas fa-users-cog fa-2x" style="color: var(--success);"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Professional Corporate Operations -->
+<div class="container">
+    <div class="row mb-5">
+        <!-- Executive Actions -->
+        <div class="col-lg-4 mb-4">
+            <div class="card animate-fade-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-rocket me-2" style="color: var(--primary);"></i>Executive Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'admin_dashboard:asset_create' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus-circle me-2"></i>Deploy New Asset
+                        </a>
+                        <a href="{% url 'crm:customer_create' %}" class="btn btn-success btn-lg">
+                            <i class="fas fa-building me-2"></i>Onboard Client
+                        </a>
+                        <a href="{% url 'crm:lead_create' %}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-chart-line me-2"></i>Generate Lead
+                        </a>
+                        <a href="{% url 'crm:assign_asset' %}" class="btn btn-info btn-lg">
+                            <i class="fas fa-network-wired me-2"></i>Asset Assignment
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Activity Monitor -->
+        <div class="col-lg-8 mb-4">
+            <div class="card animate-fade-in-right">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>System Activity Monitor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-server me-2"></i>Asset</th>
+                                    <th><i class="fas fa-cog me-2"></i>Operation</th>
+                                    <th><i class="fas fa-user me-2"></i>Operator</th>
+                                    <th><i class="fas fa-clock me-2"></i>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for history in recent_history %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'asset_detail' history.asset.id %}" class="text-decoration-none fw-semibold" style="color: var(--primary);">
+                                            <i class="fas fa-laptop me-2"></i>{{ history.asset.asset_tag }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ history.action }}</span>
+                                    </td>
+                                    <td class="text-muted">
+                                        <i class="fas fa-user-circle me-2"></i>{{ history.user.get_full_name|default:history.user.username }}
+                                    </td>
+                                    <td class="text-muted">
+                                        <i class="fas fa-calendar me-2"></i>{{ history.timestamp|date:"M d, Y H:i" }}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-5">
+                                        <i class="fas fa-chart-bar fa-3x mb-3 d-block" style="opacity: 0.2;"></i>
+                                        <h6 class="mb-2">No System Activity</h6>
+                                        <p class="mb-0">Activity monitoring will appear here once operations begin</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Professional Corporate Intelligence -->
+<div class="container">
+    <div class="row mb-5">
+        <!-- Asset Portfolio Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card animate-fade-in-left">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-donut me-2" style="color: var(--primary);"></i>Asset Portfolio Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for category in assets_by_category %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold text-dark">
+                                <i class="fas fa-folder me-2" style="color: var(--primary);"></i>{{ category.name }}
+                            </span>
+                            <span class="badge badge-primary">{{ category.asset_count }} Assets</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {% if stats.total_assets > 0 %}{% widthratio category.asset_count stats.total_assets 100 %}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-chart-donut fa-3x mb-3 d-block" style="opacity: 0.2;"></i>
+                        <h6 class="mb-2">No Asset Categories</h6>
+                        <p class="mb-0">Asset categorization will appear here once configured</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Schedule -->
+        <div class="col-lg-6 mb-4">
+            <div class="card animate-fade-in-right">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-check me-2" style="color: var(--warning);"></i>Maintenance Schedule
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for maintenance in upcoming_maintenance %}
+                    <div class="d-flex align-items-center mb-3 p-4 rounded-3" style="background: linear-gradient(135deg, rgba(214, 158, 46, 0.05) 0%, rgba(214, 158, 46, 0.1) 100%); border: 1px solid rgba(214, 158, 46, 0.2);">
+                        <div class="flex-shrink-0">
+                            <div class="maintenance-icon">
+                                <i class="fas fa-tools fa-lg" style="color: var(--warning);"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-4">
+                            <div class="fw-semibold text-dark">{{ maintenance.asset.name }}</div>
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>{{ maintenance.asset.asset_tag }}
+                            </small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <span class="badge badge-warning">
+                                <i class="fas fa-calendar me-1"></i>{{ maintenance.scheduled_date|date:"M d" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-check-circle fa-3x mb-3 d-block" style="opacity: 0.2; color: var(--success);"></i>
+                        <h6 class="mb-2">All Systems Operational</h6>
+                        <p class="mb-0">No scheduled maintenance required at this time</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Professional System Health Monitor -->
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card animate-fade-in-up">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt me-2" style="color: var(--success);"></i>Enterprise System Health Monitor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-4">
+                            <div class="system-health-card p-5 rounded-3" style="background: linear-gradient(135deg, rgba(56, 161, 105, 0.05) 0%, rgba(56, 161, 105, 0.1) 100%); border: 2px solid rgba(56, 161, 105, 0.2);">
+                                <div class="system-icon mb-3">
+                                    <i class="fas fa-database fa-3x" style="color: var(--success);"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-3">Database Core</h6>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check-circle me-1"></i>Operational
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="system-health-card p-5 rounded-3" style="background: linear-gradient(135deg, rgba(56, 161, 105, 0.05) 0%, rgba(56, 161, 105, 0.1) 100%); border: 2px solid rgba(56, 161, 105, 0.2);">
+                                <div class="system-icon mb-3">
+                                    <i class="fas fa-server fa-3x" style="color: var(--success);"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-3">Asset Engine</h6>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-chart-line me-1"></i>{{ stats.total_assets }} Assets
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="system-health-card p-5 rounded-3" style="background: linear-gradient(135deg, rgba(56, 161, 105, 0.05) 0%, rgba(56, 161, 105, 0.1) 100%); border: 2px solid rgba(56, 161, 105, 0.2);">
+                                <div class="system-icon mb-3">
+                                    <i class="fas fa-chart-network fa-3x" style="color: var(--success);"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-3">CRM Platform</h6>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-building me-1"></i>{{ crm_stats.total_customers }} Clients
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <div class="system-health-card p-5 rounded-3" style="background: linear-gradient(135deg, rgba(56, 161, 105, 0.05) 0%, rgba(56, 161, 105, 0.1) 100%); border: 2px solid rgba(56, 161, 105, 0.2);">
+                                <div class="system-icon mb-3">
+                                    <i class="fas fa-users-cog fa-3x" style="color: var(--success);"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-3">User Management</h6>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-user-shield me-1"></i>{{ stats.total_users }} Users
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "crm/base.html" %}
+
+{% block page_title %}Corporate CRM Analytics{% endblock %}
+{% block page_header %}Corporate CRM Analytics{% endblock %}
+{% block page_subtitle %}Advanced customer relationship management and business intelligence platform{% endblock %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-5 animate-fade-in-up">
+    <div class="btn-group" role="group">
+        <a href="{% url 'crm:customer_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-building-user me-2"></i>Onboard Client
+        </a>
+        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-chart-line me-2"></i>Sales Pipeline
+        </a>
+    </div>
+</div>
+
+<!-- Professional CRM Analytics -->
+<div class="row mb-5">
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="stats-number">{{ stats.total_customers|default:0 }}</div>
+            <div class="stats-label">Client Portfolio</div>
+            <div class="stats-icon">
+                <i class="fas fa-building fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card warning animate-fade-in-up" style="animation-delay: 0.2s;">
+            <div class="stats-number">{{ stats.total_leads|default:0 }}</div>
+            <div class="stats-label">Sales Pipeline</div>
+            <div class="stats-icon">
+                <i class="fas fa-chart-line fa-2x" style="color: var(--warning);"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card info animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="stats-number">{{ stats.total_assignments|default:0 }}</div>
+            <div class="stats-label">Asset Deployments</div>
+            <div class="stats-icon">
+                <i class="fas fa-network-wired fa-2x" style="color: var(--info);"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card success animate-fade-in-up" style="animation-delay: 0.4s;">
+            <div class="stats-number">{{ stats.new_customers_this_month|default:0 }}</div>
+            <div class="stats-label">Monthly Growth</div>
+            <div class="stats-icon">
+                <i class="fas fa-trending-up fa-2x" style="color: var(--success);"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card animate-fade-in-up" style="animation-delay: 0.5s;">
+            <div class="stats-number">{{ stats.new_leads_this_month|default:0 }}</div>
+            <div class="stats-label">Lead Generation</div>
+            <div class="stats-icon">
+                <i class="fas fa-user-plus fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+        <div class="stats-card text-center">
+            <div class="stats-number">${{ stats.monthly_revenue|default:0|floatformat:0 }}</div>
+            <div class="stats-label">Monthly Revenue</div>
+        </div>
+    </div>
+</div>
+
+<div class="row" data-aos="fade-up" data-aos-delay="200">
+    <!-- Recent Customers -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-users me-2 text-primary"></i>Recent Customers</h5>
+                <a href="{% url 'crm:customer_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_customers %}
+                    <div class="list-group list-group-flush">
+                        {% for customer in recent_customers %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'crm:customer_detail' customer.id %}" class="text-decoration-none">
+                                                {{ customer.full_name }}
+                                            </a>
+                                        </h6>
+                                        {% if customer.company_name %}
+                                            <p class="mb-1 text-muted small">{{ customer.company_name }}</p>
+                                        {% endif %}
+                                        <small class="text-muted">{{ customer.email }}</small>
+                                    </div>
+                                    <span class="status-badge status-{{ customer.status }}">
+                                        {{ customer.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No customers yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Asset Assignments -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-link me-2 text-success"></i>Recent Assignments</h5>
+                <a href="{% url 'crm:assignment_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_assignments %}
+                    <div class="list-group list-group-flush">
+                        {% for assignment in recent_assignments %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ assignment.asset.asset_tag }}</h6>
+                                        <p class="mb-1 text-muted small">
+                                            → {{ assignment.customer.full_name }}
+                                        </p>
+                                        <small class="text-muted">{{ assignment.assigned_date|timesince }} ago</small>
+                                    </div>
+                                    <span class="assignment-type {{ assignment.assignment_type }}">
+                                        {{ assignment.get_assignment_type_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No assignments yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Leads -->
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-user-plus me-2 text-warning"></i>Recent Leads</h5>
+                <a href="{% url 'crm:lead_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_leads %}
+                    <div class="list-group list-group-flush">
+                        {% for lead in recent_leads %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'crm:lead_detail' lead.id %}" class="text-decoration-none">
+                                                {{ lead.full_name }}
+                                            </a>
+                                        </h6>
+                                        {% if lead.company_name %}
+                                            <p class="mb-1 text-muted small">{{ lead.company_name }}</p>
+                                        {% endif %}
+                                        <small class="text-muted">{{ lead.created_at|timesince }} ago</small>
+                                    </div>
+                                    <span class="status-badge status-{{ lead.status }}">
+                                        {{ lead.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No leads yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Quick Access -->
+{% if user.employee %}
+<div class="row mt-4" data-aos="fade-up" data-aos-delay="250">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="fas fa-user-tie fa-2x me-3"></i>
+            <div class="flex-grow-1">
+                <h5 class="mb-1">Employee Access Available</h5>
+                <p class="mb-0">You have access to employee features including time tracking, tasks, and performance monitoring.</p>
+            </div>
+            <a href="{% url 'crm:employee_dashboard' %}" class="btn btn-primary">
+                <i class="fas fa-arrow-right me-2"></i>Go to My Workspace
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4" data-aos="fade-up" data-aos-delay="300">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-bolt me-2 text-info"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{% url 'crm:customer_create' %}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                            <strong>Add Customer</strong>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-info w-100 py-3">
+                            <i class="fas fa-eye fa-2x mb-2 d-block"></i>
+                            <strong>View Leads</strong>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{% url 'crm:assignment_list' %}" class="btn btn-outline-success w-100 py-3">
+                            <i class="fas fa-link fa-2x mb-2 d-block"></i>
+                            <strong>Asset Assignments</strong>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{% url 'crm:notifications' %}" class="btn btn-outline-warning w-100 py-3">
+                            <i class="fas fa-bell fa-2x mb-2 d-block"></i>
+                            <strong>Notifications</strong>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

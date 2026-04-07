@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+
+{% block title %}QR Code - {{ asset.asset_tag }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-code-container {
+        text-align: center;
+        padding: 2rem;
+    }
+    .qr-code {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: white;
+        display: inline-block;
+        margin: 1rem 0;
+    }
+    .asset-info-card {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .main-content {
+            margin: 0 !important;
+        }
+        .qr-code-container {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="no-print">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+        <h1 class="h2">QR Code - {{ asset.asset_tag }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'asset_detail' asset.id %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Asset
+                </a>
+                <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i>Print QR Code
+                </button>
+                <a href="{% url 'download_asset_qr_code' asset.id %}?size=300" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-download me-1"></i>Download PNG (300x300)
+                </a>
+                <a href="{% url 'download_asset_qr_code' asset.id %}?size=600" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-download me-1"></i>Download HD (600x600)
+                </a>
+                <a href="{% url 'download_asset_qr_code' asset.id %}?size=1000" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-download me-1"></i>Download Print (1000x1000)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="qr-code-container">
+            <!-- QR Code -->
+            <div class="qr-code" id="qr-code-container">
+                <div id="qr-code"></div>
+            </div>
+            
+            <!-- Asset Information Card -->
+            <div class="card asset-info-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ asset.asset_tag }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ asset.name }}</h6>
+                    <div class="row text-start">
+                        <div class="col-6">
+                            <small class="text-muted">Model:</small><br>
+                            <strong>{{ asset.model.manufacturer.name }}</strong><br>
+                            {{ asset.model.name }}
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Status:</small><br>
+                            <span class="badge bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% elif asset.status == 'retired' %}danger{% else %}secondary{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if asset.assigned_to %}
+                    <div class="mt-2 text-start">
+                        <small class="text-muted">Assigned to:</small><br>
+                        <strong>{{ asset.assigned_to.get_full_name }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if asset.location %}
+                    <div class="mt-2 text-start">
+                        <small class="text-muted">Location:</small><br>
+                        <strong>{{ asset.location.name }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- QR Code Information -->
+            <div class="no-print mt-4">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>QR Code Information</h6>
+                    <p class="mb-2">This QR code contains a link to this asset's public information page:</p>
+                    <code>{{ public_url }}</code>
+                    <p class="mt-2 mb-0">Scan with any QR code reader to quickly access asset information without login.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Multiple QR Codes for Printing -->
+<div class="no-print mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Print Multiple Labels</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="label-count" class="form-label">Number of labels to print:</label>
+                    <select class="form-select" id="label-count" onchange="generateMultipleQR()">
+                        <option value="1">1 label</option>
+                        <option value="2">2 labels</option>
+                        <option value="4">4 labels</option>
+                        <option value="6">6 labels</option>
+                        <option value="8">8 labels</option>
+                        <option value="12">12 labels</option>
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-primary" onclick="printMultipleLabels()">
+                        <i class="fas fa-print me-1"></i>Print Multiple Labels
+                    </button>
+                </div>
+            </div>
+            <div id="multiple-qr-container" class="mt-3" style="display: none;">
+                <!-- Multiple QR codes will be generated here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- QR Code Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Generate main QR code
+    generateQRCode();
+});
+
+function generateQRCode() {
+    const qrData = "{{ public_url|escapejs }}";
+    const qrContainer = document.getElementById('qr-code');
+    
+    QRCode.toCanvas(qrContainer, qrData, {
+        width: 200,
+        height: 200,
+        margin: 2,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function (error) {
+        if (error) {
+            console.error('QR Code generation failed:', error);
+            qrContainer.innerHTML = '<div class="alert alert-danger">Failed to generate QR code</div>';
+        }
+    });
+}
+
+function downloadQR() {
+    const qrData = "{{ public_url|escapejs }}";
+    const canvas = document.createElement('canvas');
+    
+    QRCode.toCanvas(canvas, qrData, {
+        width: 400,
+        height: 400,
+        margin: 4,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function (error) {
+        if (error) {
+            console.error('QR Code generation failed:', error);
+            return;
+        }
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = '{{ asset.asset_tag }}_qr_code.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+function generateMultipleQR() {
+    const count = parseInt(document.getElementById('label-count').value);
+    const container = document.getElementById('multiple-qr-container');
+    const qrData = "{{ public_url|escapejs }}";
+    
+    container.innerHTML = '';
+    container.style.display = 'block';
+    
+    // Create grid layout
+    const grid = document.createElement('div');
+    grid.className = 'row';
+    
+    for (let i = 0; i < count; i++) {
+        const col = document.createElement('div');
+        col.className = 'col-md-3 col-sm-6 mb-3';
+        
+        const labelCard = document.createElement('div');
+        labelCard.className = 'card text-center';
+        labelCard.style.fontSize = '0.8rem';
+        
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body p-2';
+        
+        // QR Code canvas
+        const canvas = document.createElement('canvas');
+        QRCode.toCanvas(canvas, qrData, {
+            width: 120,
+            height: 120,
+            margin: 1
+        });
+        
+        // Asset info
+        const assetInfo = document.createElement('div');
+        assetInfo.innerHTML = `
+            <strong>{{ asset.asset_tag }}</strong><br>
+            <small>{{ asset.name }}</small>
+        `;
+        
+        cardBody.appendChild(canvas);
+        cardBody.appendChild(assetInfo);
+        labelCard.appendChild(cardBody);
+        col.appendChild(labelCard);
+        grid.appendChild(col);
+    }
+    
+    container.appendChild(grid);
+}
+
+function printMultipleLabels() {
+    const container = document.getElementById('multiple-qr-container');
+    if (container.style.display === 'none') {
+        generateMultipleQR();
+    }
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Asset Labels - {{ asset.asset_tag }}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
+                .label { 
+                    display: inline-block; 
+                    width: 2.5in; 
+                    height: 2in; 
+                    border: 1px solid #ccc; 
+                    margin: 0.1in; 
+                    padding: 0.1in; 
+                    text-align: center; 
+                    vertical-align: top;
+                    page-break-inside: avoid;
+                }
+                .label canvas { max-width: 100%; height: auto; }
+                .label-text { font-size: 10px; margin-top: 5px; }
+                @media print {
+                    body { margin: 0; }
+                    .label { margin: 0.05in; }
+                }
+            </style>
+        </head>
+        <body>
+    `);
+    
+    const labels = container.querySelectorAll('.card');
+    labels.forEach(label => {
+        const canvas = label.querySelector('canvas');
+        const text = label.querySelector('div').innerHTML;
+        
+        printWindow.document.write(`
+            <div class="label">
+                <canvas width="${canvas.width}" height="${canvas.height}"></canvas>
+                <div class="label-text">${text}</div>
+            </div>
+        `);
+        
+        // Copy canvas content
+        const printCanvas = printWindow.document.querySelector('canvas:last-child');
+        const ctx = printCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, 0);
+    });
+    
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+</script>
+{% endblock %}

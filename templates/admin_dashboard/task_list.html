@@ -1,0 +1,213 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Task Management{% endblock %}
+{% block page_header %}Task Management{% endblock %}
+{% block page_subtitle %}View and manage all employee tasks{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
+    <h1>Task Management</h1>
+    <div class="btn-group">
+        <a href="{% url 'admin_dashboard:task_assign' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Assign New Task
+        </a>
+        <a href="/admin-dashboard/employees/" class="btn btn-outline-primary">
+            <i class="fas fa-users me-2"></i>Employees
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="card mb-4 animate-fade-in-up" style="animation-delay: 0.1s;">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search Tasks</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search }}" 
+                       placeholder="Title, description...">
+            </div>
+            <div class="col-md-3">
+                <label for="employee" class="form-label">Employee</label>
+                <select class="form-select" id="employee" name="employee">
+                    <option value="">All Employees</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>
+                            {{ emp.full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Task List -->
+<div class="card animate-fade-in-up" style="animation-delay: 0.2s;">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-tasks me-2" style="color: var(--primary);"></i>
+            Tasks ({{ page_obj.paginator.count }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-tasks me-2"></i>Task</th>
+                            <th><i class="fas fa-user me-2"></i>Assigned To</th>
+                            <th><i class="fas fa-exclamation-circle me-2"></i>Priority</th>
+                            <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                            <th><i class="fas fa-calendar me-2"></i>Due Date</th>
+                            <th><i class="fas fa-clock me-2"></i>Hours</th>
+                            <th><i class="fas fa-user-tie me-2"></i>Assigned By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in page_obj %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <div class="fw-semibold">{{ task.title }}</div>
+                                    <small class="text-muted">{{ task.description|truncatechars:60 }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-2">
+                                        <i class="fas fa-user-circle fa-lg text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ task.assigned_to.full_name }}</div>
+                                        <small class="text-muted">{{ task.assigned_to.position }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if task.priority == 'urgent' %}
+                                    <span class="badge bg-danger">Urgent</span>
+                                {% elif task.priority == 'high' %}
+                                    <span class="badge bg-warning">High</span>
+                                {% elif task.priority == 'medium' %}
+                                    <span class="badge bg-primary">Medium</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if task.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif task.status == 'in_progress' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% elif task.status == 'cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if task.due_date %}
+                                    {% if task.due_date < now and task.status != 'completed' %}
+                                        <span class="text-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            {{ task.due_date|date:"M d, Y" }}
+                                        </span>
+                                    {% else %}
+                                        {{ task.due_date|date:"M d, Y" }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">No due date</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    {% if task.estimated_hours %}
+                                        <small class="text-muted">Est: {{ task.estimated_hours }}h</small>
+                                    {% endif %}
+                                    {% if task.actual_hours %}
+                                        <div><strong>{{ task.actual_hours }}h</strong></div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if task.assigned_by %}
+                                    {{ task.assigned_by.get_full_name|default:task.assigned_by.username }}
+                                {% else %}
+                                    <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Task pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5>No Tasks Found</h5>
+                <p class="text-muted">No tasks match your search criteria.</p>
+                <a href="{% url 'admin_dashboard:task_assign' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Assign First Task
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

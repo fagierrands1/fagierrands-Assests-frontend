@@ -1,0 +1,140 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Fund Requests{% endblock %}
+{% block page_header %}Fund Requests{% endblock %}
+{% block page_subtitle %}Review all employee fund requests{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .request-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .status-badge {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="request-card" data-aos="fade-up">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="fas fa-hand-holding-usd text-success me-2"></i>
+                        Employee Fund Requests
+                    </h4>
+                    <p class="text-muted mb-0">Monitor incoming requests and track their status.</p>
+                </div>
+                <form class="d-flex align-items-center gap-2" method="get">
+                    <label for="status" class="form-label mb-0 me-2 text-muted small">Status</label>
+                    <select class="form-select form-select-sm" name="status" id="status" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if status_filter %}
+                    <a href="{% url 'crm:money_request_list' %}" class="btn btn-link btn-sm text-decoration-none">Reset</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            {% if money_requests %}
+            <div class="table-responsive">
+                <table class="table align-middle no-datatable">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Submitted</th>
+                            <th scope="col">Employee</th>
+                            <th scope="col">From</th>
+                            <th scope="col">To</th>
+                            <th scope="col">Request Date</th>
+                            <th scope="col">Amount</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Notes</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for money_request in money_requests %}
+                        <tr>
+                            <td>{{ money_request.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ money_request.employee.full_name }}</div>
+                                <small class="text-muted">{{ money_request.employee.employee_id }}</small>
+                            </td>
+                            <td>{{ money_request.from_entity }}</td>
+                            <td>{{ money_request.to_entity }}</td>
+                            <td>{{ money_request.request_date|date:"M d, Y" }}</td>
+                            <td>KSh {{ money_request.amount }}</td>
+                            <td>
+                                <span class="status-badge badge bg-{% if money_request.status == 'approved' %}success{% elif money_request.status == 'rejected' %}danger{% else %}secondary{% endif %}">
+                                    {{ money_request.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if money_request.notes %}
+                                    <div class="text-muted">{{ money_request.notes }}</div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">No notes</span>
+                                {% endif %}
+                                {% if money_request.decision_notes %}
+                                    <div class="small mt-1">
+                                        <span class="text-muted">Decision note:</span>
+                                        <span>{{ money_request.decision_notes }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if money_request.processed_by %}
+                                    <div class="small text-muted mt-1">
+                                        Handled by {{ money_request.processed_by.full_name }} on {{ money_request.processed_at|date:"M d, Y H:i" }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end" style="min-width: 220px;">
+                                {% if money_request.status == 'pending' %}
+                                <form method="post" action="{% url 'crm:money_request_decision' money_request.id %}" class="d-flex gap-2 justify-content-end align-items-center no-submit-loading">
+                                    {% csrf_token %}
+                                    <input type="text" name="decision_notes" class="form-control form-control-sm" placeholder="Optional note">
+                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                                {% elif money_request.status == 'approved' %}
+                                <span class="btn btn-info btn-sm" title="Approved">
+                                    <i class="fas fa-check-double"></i>
+                                </span>
+                                {% else %}
+                                <span class="text-muted small">No actions available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="mb-1">No fund requests found</h5>
+                <p class="text-muted mb-0">New requests will appear here as employees submit them.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,116 @@
+{% extends "crm/base.html" %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ lead.full_name }}</h1>
+    <div class="btn-group" role="group">
+        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Leads
+        </a>
+        {% if lead.status != 'won' %}
+            <form method="post" action="{% url 'crm:convert_lead' lead.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" onclick="return confirm('Convert this lead to a customer?')">
+                    <i class="fas fa-user-check"></i> Convert to Customer
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Lead Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Name:</strong><br>
+                    {{ lead.full_name }}
+                </div>
+                
+                {% if lead.company_name %}
+                    <div class="mb-3">
+                        <strong>Company:</strong><br>
+                        {{ lead.company_name }}
+                    </div>
+                {% endif %}
+                
+                {% if lead.title %}
+                    <div class="mb-3">
+                        <strong>Title:</strong><br>
+                        {{ lead.title }}
+                    </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Email:</strong><br>
+                    <a href="mailto:{{ lead.email }}">{{ lead.email }}</a>
+                </div>
+                
+                {% if lead.phone %}
+                    <div class="mb-3">
+                        <strong>Phone:</strong><br>
+                        <a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Status:</strong><br>
+                    <span class="status-badge status-{{ lead.status }}">
+                        {{ lead.get_status_display }}
+                    </span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Source:</strong><br>
+                    {{ lead.get_source_display }}
+                </div>
+                
+                {% if lead.assigned_employee %}
+                    <div class="mb-3">
+                        <strong>Assigned Employee:</strong><br>
+                        {{ lead.assigned_employee.full_name }}<br>
+                        <small class="text-muted">{{ lead.assigned_employee.position }}</small>
+                    </div>
+                {% endif %}
+                
+                {% if lead.estimated_value %}
+                    <div class="mb-3">
+                        <strong>Estimated Value:</strong><br>
+                        ${{ lead.estimated_value|floatformat:2 }}
+                    </div>
+                {% endif %}
+                
+                {% if lead.expected_close_date %}
+                    <div class="mb-3">
+                        <strong>Expected Close Date:</strong><br>
+                        {{ lead.expected_close_date|date:"F d, Y" }}
+                    </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Created:</strong><br>
+                    {{ lead.created_at|date:"F d, Y g:i A" }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Notes</h5>
+            </div>
+            <div class="card-body">
+                {% if lead.notes %}
+                    <p>{{ lead.notes|linebreaks }}</p>
+                {% else %}
+                    <p class="text-muted">No notes for this lead yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

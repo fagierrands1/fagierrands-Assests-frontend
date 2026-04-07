@@ -1,0 +1,147 @@
+{% extends "crm/base.html" %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Asset Assignments</h1>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="assignment_type" class="form-label">Assignment Type</label>
+                <select class="form-select" id="assignment_type" name="assignment_type">
+                    <option value="">All Types</option>
+                    {% for value, label in assignment_type_choices %}
+                        <option value="{{ value }}" {% if assignment_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="is_active" class="form-label">Status</label>
+                <select class="form-select" id="is_active" name="is_active">
+                    <option value="">All</option>
+                    <option value="true" {% if is_active == 'true' %}selected{% endif %}>Active</option>
+                    <option value="false" {% if is_active == 'false' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assignment List -->
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Customer</th>
+                            <th>Assignment Type</th>
+                            <th>Status</th>
+                            <th>Assigned Date</th>
+                            <th>Monthly Fee</th>
+                            <th>Assigned By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ assignment.asset.asset_tag }}</strong><br>
+                                    <small class="text-muted">{{ assignment.asset.name }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'crm:customer_detail' assignment.customer.id %}" class="text-decoration-none">
+                                        {{ assignment.customer.full_name }}
+                                    </a>
+                                    {% if assignment.customer.company_name %}
+                                        <br><small class="text-muted">{{ assignment.customer.company_name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="assignment-type {{ assignment.assignment_type }}">
+                                        {{ assignment.get_assignment_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if assignment.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ assignment.assigned_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if assignment.monthly_fee %}
+                                        ${{ assignment.monthly_fee }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if assignment.assigned_by %}
+                                        {{ assignment.assigned_by.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">System</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Assignment pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if assignment_type %}&assignment_type={{ assignment_type }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if assignment_type %}&assignment_type={{ assignment_type }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if assignment_type %}&assignment_type={{ assignment_type }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if assignment_type %}&assignment_type={{ assignment_type }}{% endif %}{% if is_active %}&is_active={{ is_active }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-link fa-3x text-muted mb-3"></i>
+                <h4>No assignments found</h4>
+                <p class="text-muted">Asset assignments will appear here when customers are assigned assets.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,309 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ title }} - Admin Dashboard{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% if user_obj %}Edit user information and profile{% else %}Create a new system user{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- User Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-user me-2"></i>User Information
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">Username *</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name *</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name *</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if not user_obj %}
+                    <!-- Password fields only for new users -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Password *</label>
+                            {{ form.password1 }}
+                            {% if form.password1.errors %}
+                                <div class="text-danger small">{{ form.password1.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password *</label>
+                            {{ form.password2 }}
+                            {% if form.password2.errors %}
+                                <div class="text-danger small">{{ form.password2.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- User Profile -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-id-card me-2"></i>Profile Information
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ employee_form.employee_id.id_for_label }}" class="form-label">Employee ID</label>
+                            {{ employee_form.employee_id }}
+                            {% if employee_form.employee_id.errors %}
+                                <div class="text-danger small">{{ employee_form.employee_id.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">Leave blank to auto-generate</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ employee_form.phone.id_for_label }}" class="form-label">Phone</label>
+                            {{ employee_form.phone }}
+                            {% if employee_form.phone.errors %}
+                                <div class="text-danger small">{{ employee_form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+                            {{ form.role }}
+                            {% if form.role.errors %}
+                                <div class="text-danger small">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ employee_form.position.id_for_label }}" class="form-label">Position</label>
+                            {{ employee_form.position }}
+                            {% if employee_form.position.errors %}
+                                <div class="text-danger small">{{ employee_form.position.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ employee_form.department.id_for_label }}" class="form-label">Department</label>
+                            {{ employee_form.department }}
+                            {% if employee_form.department.errors %}
+                                <div class="text-danger small">{{ employee_form.department.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ employee_form.manager.id_for_label }}" class="form-label">Manager</label>
+                            {{ employee_form.manager }}
+                            {% if employee_form.manager.errors %}
+                                <div class="text-danger small">{{ employee_form.manager.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ employee_form.hire_date.id_for_label }}" class="form-label">Hire Date</label>
+                            {{ employee_form.hire_date }}
+                            {% if employee_form.hire_date.errors %}
+                                <div class="text-danger small">{{ employee_form.hire_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Permissions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt me-2"></i>Permissions
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    Active User
+                                </label>
+                                <div class="form-text">User can log in to the system</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_staff }}
+                                <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                    Staff Status
+                                </label>
+                                <div class="form-text">Can access admin dashboard</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_superuser }}
+                                <label class="form-check-label" for="{{ form.is_superuser.id_for_label }}">
+                                    Superuser Status
+                                </label>
+                                <div class="form-text">Has all permissions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'admin_dashboard:user_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Users
+                </a>
+                <div>
+                    {% if user_obj %}
+                        <a href="{% url 'admin_dashboard:user_detail' user_obj.id %}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-eye me-2"></i>View Details
+                        </a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>{% if user_obj %}Update User{% else %}Create User{% endif %}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Help
+            </div>
+            <div class="card-body">
+                <h6>User Permissions</h6>
+                <ul class="list-unstyled small">
+                    <li><strong>Active:</strong> User can log in and use the system</li>
+                    <li><strong>Staff:</strong> User can access the admin dashboard</li>
+                    <li><strong>Superuser:</strong> User has all system permissions</li>
+                </ul>
+                
+                <h6 class="mt-3">Employee ID</h6>
+                <p class="small">If left blank, an employee ID will be automatically generated in the format FGE001, FGE002, etc.</p>
+                
+                <h6 class="mt-3">Password Requirements</h6>
+                <ul class="list-unstyled small">
+                    <li>• At least 8 characters long</li>
+                    <li>• Cannot be too similar to personal information</li>
+                    <li>• Cannot be a commonly used password</li>
+                    <li>• Cannot be entirely numeric</li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if user_obj %}
+        <!-- User Statistics -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>User Statistics
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-primary">{{ user_obj.assets.count }}</h5>
+                            <small class="text-muted">Assigned Assets</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-info">{{ user_obj.activities.count }}</h5>
+                        <small class="text-muted">Total Activities</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <div class="d-flex justify-content-between">
+                        <span>Date Joined:</span>
+                        <span>{{ user_obj.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Last Login:</span>
+                        <span>
+                            {% if user_obj.last_login %}
+                                {{ user_obj.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for dropdowns
+    $('#{{ employee_form.department.id_for_label }}, #{{ employee_form.manager.id_for_label }}').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        allowClear: true,
+        placeholder: 'Select an option...'
+    });
+
+    // Role to department mapping
+    const roleDepartmentMapping = JSON.parse('{{ role_department_mapping|default:"{}"|escapejs }}');
+
+    // Auto-populate department when role changes
+    $('#{{ form.role.id_for_label }}').on('change', function() {
+        const selectedRole = $(this).val();
+        if (selectedRole && roleDepartmentMapping[selectedRole]) {
+            const departmentName = roleDepartmentMapping[selectedRole];
+
+            // Find the department option by text and select it
+            $('#{{ employee_form.department.id_for_label }} option').each(function() {
+                if ($(this).text() === departmentName) {
+                    $(this).prop('selected', true);
+                    $('#{{ employee_form.department.id_for_label }}').trigger('change.select2');
+                    return false; // Break the loop
+                }
+            });
+        }
+    });
+
+    // Trigger change on page load if role is already selected
+    const initialRole = $('#{{ form.role.id_for_label }}').val();
+    if (initialRole) {
+        $('#{{ form.role.id_for_label }}').trigger('change');
+    }
+});
+</script>
+{% endblock %}

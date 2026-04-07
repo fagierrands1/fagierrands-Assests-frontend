@@ -1,0 +1,196 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Assign Task{% endblock %}
+{% block page_header %}Assign Task{% endblock %}
+{% block page_subtitle %}Create and assign tasks to employees{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
+    <h1>Assign Task to Employee</h1>
+    <a href="/admin-dashboard/tasks/" class="btn btn-outline-secondary">
+        <i class="fas fa-list me-2"></i>View All Tasks
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card animate-fade-in-left">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Task Information -->
+                    <h5 class="mb-3">
+                        <i class="fas fa-tasks me-2" style="color: var(--primary);"></i>Task Details
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Task Title *</label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               placeholder="Enter task title...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required
+                                  placeholder="Describe the task in detail..."></textarea>
+                    </div>
+                    
+                    <!-- Assignment Details -->
+                    <h5 class="mb-3">
+                        <i class="fas fa-user-check me-2" style="color: var(--success);"></i>Assignment Details
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="assigned_to" class="form-label">Assign to Employee *</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                <option value="">Select Employee</option>
+                                {% for employee in employees %}
+                                    <option value="{{ employee.id }}">
+                                        {{ employee.full_name }} - {{ employee.position }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-select" id="priority" name="priority">
+                                {% for value, label in priority_choices %}
+                                    <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="estimated_hours" class="form-label">Estimated Hours</label>
+                            <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" 
+                                   step="0.5" min="0" placeholder="0.0">
+                        </div>
+                    </div>
+                    
+                    <!-- Related Objects -->
+                    <h5 class="mb-3">
+                        <i class="fas fa-link me-2" style="color: var(--info);"></i>Related Objects (Optional)
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="customer" class="form-label">Related Customer</label>
+                            <select class="form-select" id="customer" name="customer">
+                                <option value="">Select Customer</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.id }}">
+                                        {{ customer.full_name }}{% if customer.company_name %} - {{ customer.company_name }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="lead" class="form-label">Related Lead</label>
+                            <select class="form-select" id="lead" name="lead">
+                                <option value="">Select Lead</option>
+                                {% for lead in leads %}
+                                    <option value="{{ lead.id }}">
+                                        {{ lead.full_name }}{% if lead.company_name %} - {{ lead.company_name }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="asset" class="form-label">Related Asset</label>
+                            <select class="form-select" id="asset" name="asset">
+                                <option value="">Select Asset</option>
+                                {% for asset in assets %}
+                                    <option value="{{ asset.id }}">
+                                        {{ asset.name }} ({{ asset.asset_tag }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin-dashboard/employees/" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Assign Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card animate-fade-in-right">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2" style="color: var(--info);"></i>Task Assignment Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-3">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        <strong>Required fields</strong> are marked with *
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-user-check text-success me-2"></i>
+                        <strong>Choose the right employee</strong> based on skills and workload
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        <strong>Set priority</strong> to help employees prioritize work
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-calendar text-info me-2"></i>
+                        <strong>Due date</strong> helps with time management
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        <strong>Estimated hours</strong> helps with planning
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-link text-secondary me-2"></i>
+                        <strong>Link to customers/assets</strong> for context
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-4 animate-fade-in-right" style="animation-delay: 0.2s;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2" style="color: var(--success);"></i>Priority Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-danger me-2">Urgent</span>
+                    <small>Critical issues, immediate attention</small>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-warning me-2">High</span>
+                    <small>Important tasks, complete within 1-2 days</small>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-primary me-2">Medium</span>
+                    <small>Regular tasks, complete within a week</small>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-secondary me-2">Low</span>
+                    <small>Nice-to-have tasks, no rush</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

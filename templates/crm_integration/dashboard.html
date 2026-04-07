@@ -1,0 +1,154 @@
+{% extends "crm_integration/base.html" %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>CRM Integration Dashboard</h1>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary" onclick="performSync('test_connection', this)">
+            Test Connection
+        </button>
+        <button type="button" class="btn btn-sync" onclick="performSync('full_sync', this)">
+            Full Sync
+        </button>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card text-center">
+            <div class="stats-number">{{ stats.total_customers }}</div>
+            <div class="text-muted">Total Customers</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card text-center">
+            <div class="stats-number">{{ stats.total_assignments }}</div>
+            <div class="text-muted">Active Assignments</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card text-center">
+            <div class="stats-number text-warning">{{ stats.pending_syncs }}</div>
+            <div class="text-muted">Pending Syncs</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card text-center">
+            <div class="stats-number text-danger">{{ stats.error_syncs }}</div>
+            <div class="text-muted">Sync Errors</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="performSync('sync_customers', this)">
+                        Sync Customers from CRM
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="performSync('sync_assignments', this)">
+                        Sync Assignments to CRM
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="performSync('sync_employees', this)">
+                        Sync Employee Data
+                    </button>
+                    <a href="{% url 'crm_integration:settings' %}" class="btn btn-outline-secondary">
+                        Integration Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Sync Logs -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Sync Activity</h5>
+                <a href="{% url 'crm_integration:sync_logs' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_logs %}
+                    <div class="list-group list-group-flush">
+                        {% for log in recent_logs %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ log.get_sync_type_display }} - {{ log.get_sync_action_display }}</h6>
+                                        <p class="mb-1 text-muted small">
+                                            {{ log.records_success }}/{{ log.records_processed }} records
+                                            {% if log.duration_seconds %}
+                                                • {{ log.duration_seconds|floatformat:1 }}s
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">{{ log.started_at|timesince }} ago</small>
+                                    </div>
+                                    <span class="sync-status {{ log.status }}">{{ log.get_status_display }}</span>
+                                </div>
+                                {% if log.error_message %}
+                                    <small class="text-danger">{{ log.error_message|truncatechars:100 }}</small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No sync activity yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Integration Status -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Integration Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Connection Settings</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>CRM URL:</strong> {{ settings.crm_base_url }}</li>
+                            <li><strong>Auto Sync:</strong> 
+                                {% if settings.auto_sync_enabled %}
+                                    <span class="text-success">Enabled</span>
+                                {% else %}
+                                    <span class="text-warning">Disabled</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Sync Interval:</strong> {{ settings.sync_interval_minutes }} minutes</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Sync Configuration</h6>
+                        <ul class="list-unstyled">
+                            <li>
+                                <i class="fas fa-{% if settings.sync_customers_to_assets %}check text-success{% else %}times text-danger{% endif %}"></i>
+                                Customers → Assets
+                            </li>
+                            <li>
+                                <i class="fas fa-{% if settings.sync_assets_to_crm %}check text-success{% else %}times text-danger{% endif %}"></i>
+                                Assets → CRM
+                            </li>
+                            <li>
+                                <i class="fas fa-{% if settings.sync_employees %}check text-success{% else %}times text-danger{% endif %}"></i>
+                                Employee Sync
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,295 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}System Logs - Admin Dashboard{% endblock %}
+{% block page_title %}System Logs{% endblock %}
+{% block page_subtitle %}View system activities and user actions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">System Activity Logs</h5>
+        <small class="text-muted">{{ page_obj.paginator.count }} total log entr{{ page_obj.paginator.count|pluralize:"y,ies" }}</small>
+    </div>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-primary" onclick="refreshLogs()">
+            <i class="fas fa-sync-alt me-2"></i>Refresh
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="exportLogs()">
+            <i class="fas fa-download me-2"></i>Export
+        </button>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="user" class="form-label">User</label>
+                <select class="form-select" id="user" name="user">
+                    <option value="">All Users</option>
+                    <!-- Add user options dynamically -->
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="action" class="form-label">Action</label>
+                <select class="form-select" id="action" name="action">
+                    <option value="">All Actions</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" class="form-control" id="date_from" name="date_from">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">To Date</label>
+                <input type="date" class="form-control" id="date_to" name="date_to">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+                <a href="{% url 'admin_dashboard:system_logs' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-file-alt me-2"></i>Activity Logs
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Action</th>
+                            <th>User</th>
+                            <th>Description</th>
+                            <th style="width: 120px;">IP Address</th>
+                            <th style="width: 150px;">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in page_obj %}
+                        <tr>
+                            <td>
+                                {% if activity.action == 'login' %}
+                                    <span class="badge bg-success" title="Login">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </span>
+                                {% elif activity.action == 'logout' %}
+                                    <span class="badge bg-secondary" title="Logout">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </span>
+                                {% elif activity.action == 'create' %}
+                                    <span class="badge bg-primary" title="Create">
+                                        <i class="fas fa-plus"></i>
+                                    </span>
+                                {% elif activity.action == 'update' %}
+                                    <span class="badge bg-warning" title="Update">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
+                                {% elif activity.action == 'delete' %}
+                                    <span class="badge bg-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                {% elif activity.action == 'view' %}
+                                    <span class="badge bg-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark" title="{{ activity.action|title }}">
+                                        <i class="fas fa-info-circle"></i>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 25px; height: 25px;">
+                                        <span class="text-white small fw-bold">
+                                            {{ activity.user.first_name|first|default:activity.user.username|first|upper }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold small">{{ activity.user.get_full_name|default:activity.user.username }}</div>
+                                        <div class="text-muted small">@{{ activity.user.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">{{ activity.description }}</div>
+                                {% if activity.user_agent %}
+                                    <div class="text-muted small">
+                                        {% if 'Chrome' in activity.user_agent %}
+                                            <i class="fab fa-chrome me-1"></i>Chrome
+                                        {% elif 'Firefox' in activity.user_agent %}
+                                            <i class="fab fa-firefox me-1"></i>Firefox
+                                        {% elif 'Safari' in activity.user_agent %}
+                                            <i class="fab fa-safari me-1"></i>Safari
+                                        {% elif 'Edge' in activity.user_agent %}
+                                            <i class="fab fa-edge me-1"></i>Edge
+                                        {% else %}
+                                            <i class="fas fa-globe me-1"></i>Browser
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.ip_address %}
+                                    <code class="small">{{ activity.ip_address }}</code>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small" title="{{ activity.timestamp }}">
+                                    {{ activity.timestamp|date:"M d, H:i" }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ activity.timestamp|timesince }} ago
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Log pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No Log Entries Found</h5>
+                <p class="text-muted">No system activities match your criteria.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Log Statistics -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card stats-card success">
+            <div class="card-body text-center">
+                <h4 class="text-success">{{ page_obj.paginator.count }}</h4>
+                <small class="text-muted">Total Entries</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card primary">
+            <div class="card-body text-center">
+                <h4 class="text-primary">24</h4>
+                <small class="text-muted">Today</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card warning">
+            <div class="card-body text-center">
+                <h4 class="text-warning">156</h4>
+                <small class="text-muted">This Week</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card info">
+            <div class="card-body text-center">
+                <h4 class="text-info">892</h4>
+                <small class="text-muted">This Month</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshLogs() {
+    location.reload();
+}
+
+function exportLogs() {
+    // Create a simple CSV export
+    const table = document.querySelector('table');
+    let csv = [];
+    
+    // Get headers
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    // Get data rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).map(td => {
+            return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+        });
+        csv.push(cells.join(','));
+    });
+    
+    // Download CSV
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'system_logs_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    const refreshBtn = document.querySelector('[onclick="refreshLogs()"]');
+    if (refreshBtn) {
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin me-2"></i>Refreshing...';
+        setTimeout(() => {
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Refresh';
+        }, 1000);
+    }
+}, 30000);
+</script>
+{% endblock %}

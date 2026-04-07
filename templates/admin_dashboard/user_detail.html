@@ -1,0 +1,373 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ user_obj.get_full_name|default:user_obj.username }} - Admin Dashboard{% endblock %}
+{% block page_title %}User Details{% endblock %}
+{% block page_subtitle %}{{ user_obj.get_full_name|default:user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- User Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-user me-2"></i>User Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        {% if user_obj.profile.avatar %}
+                            <img src="{{ user_obj.profile.avatar.url }}" alt="Avatar" 
+                                 class="rounded-circle img-fluid" style="max-width: 80px;">
+                        {% else %}
+                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px;">
+                                <span class="text-white fw-bold fs-2">
+                                    {{ user_obj.first_name|first|default:user_obj.username|first|upper }}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-10">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{{ user_obj.get_full_name|default:user_obj.username }}</h5>
+                                <p class="text-muted mb-1">@{{ user_obj.username }}</p>
+                                <p class="text-muted mb-1">{{ user_obj.email }}</p>
+                                
+                                <div class="mt-2">
+                                    {% if user_obj.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                    {% if user_obj.is_staff %}
+                                        <span class="badge bg-primary ms-1">Staff</span>
+                                    {% endif %}
+                                    {% if user_obj.is_superuser %}
+                                        <span class="badge bg-danger ms-1">Admin</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="small">
+                                    <div class="mb-1">
+                                        <strong>Employee ID:</strong> 
+                                        {% if user_obj.profile.employee_id %}
+                                            {{ user_obj.profile.employee_id }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Job Title:</strong> 
+                                        {% if user_obj.profile.job_title %}
+                                            {{ user_obj.profile.job_title }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Department:</strong> 
+                                        {% if user_obj.profile.department %}
+                                            {{ user_obj.profile.department.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Role:</strong>
+                                        {% if user_obj.role %}
+                                            {{ user_obj.get_role_display }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Manager:</strong>
+                                        {% if user_obj.profile.manager %}
+                                            {{ user_obj.profile.manager.get_full_name|default:user_obj.profile.manager.username }}
+                                        {% else %}
+                                            <span class="text-muted">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-address-book me-2"></i>Contact Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Phone</label>
+                            <div>
+                                {% if user_obj.profile.phone %}
+                                    <i class="fas fa-phone me-2"></i>{{ user_obj.profile.phone }}
+                                {% else %}
+                                    <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Mobile</label>
+                            <div>
+                                {% if user_obj.profile.mobile %}
+                                    <i class="fas fa-mobile-alt me-2"></i>{{ user_obj.profile.mobile }}
+                                {% else %}
+                                    <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Location</label>
+                            <div>
+                                {% if user_obj.profile.location %}
+                                    <i class="fas fa-map-marker-alt me-2"></i>{{ user_obj.profile.location.name }}
+                                {% else %}
+                                    <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Assigned Assets -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-laptop me-2"></i>Assigned Assets ({{ assigned_assets|length }})
+            </div>
+            <div class="card-body">
+                {% if assigned_assets %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Asset Tag</th>
+                                    <th>Name</th>
+                                    <th>Model</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in assigned_assets %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-bold">{{ asset.asset_tag }}</span>
+                                    </td>
+                                    <td>{{ asset.name }}</td>
+                                    <td>{{ asset.model.manufacturer.name }} {{ asset.model.name }}</td>
+                                    <td>
+                                        {% if asset.status == 'active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif asset.status == 'inactive' %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% elif asset.status == 'maintenance' %}
+                                            <span class="badge bg-warning">Maintenance</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'admin_dashboard:asset_detail' asset.id %}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-laptop fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No assets assigned to this user</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i>Recent Activities
+            </div>
+            <div class="card-body">
+                {% if recent_activities %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>
+                                        {% if activity.action == 'login' %}
+                                            <i class="fas fa-sign-in-alt text-success"></i>
+                                        {% elif activity.action == 'logout' %}
+                                            <i class="fas fa-sign-out-alt text-muted"></i>
+                                        {% elif activity.action == 'create' %}
+                                            <i class="fas fa-plus text-primary"></i>
+                                        {% elif activity.action == 'update' %}
+                                            <i class="fas fa-edit text-warning"></i>
+                                        {% elif activity.action == 'delete' %}
+                                            <i class="fas fa-trash text-danger"></i>
+                                        {% endif %}
+                                        {{ activity.action|title }}
+                                    </td>
+                                    <td>{{ activity.description }}</td>
+                                    <td>
+                                        <span title="{{ activity.timestamp }}">
+                                            {{ activity.timestamp|timesince }} ago
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No recent activities</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_dashboard:user_edit' user_obj.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit User
+                    </a>
+                    <a href="{% url 'admin_dashboard:user_toggle_active' user_obj.id %}" 
+                       class="btn btn-{% if user_obj.is_active %}warning{% else %}success{% endif %}">
+                        <i class="fas fa-{% if user_obj.is_active %}pause{% else %}play{% endif %} me-2"></i>
+                        {% if user_obj.is_active %}Deactivate User{% else %}Activate User{% endif %}
+                    </a>
+                    <a href="{% url 'admin_dashboard:asset_create' %}?assigned_to={{ user_obj.id }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Assign New Asset
+                    </a>
+                    <hr>
+                    <a href="{% url 'admin_dashboard:user_delete' user_obj.id %}" 
+                       class="btn btn-outline-danger delete-confirm">
+                        <i class="fas fa-trash me-2"></i>Delete User
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Statistics
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ assigned_assets|length }}</h4>
+                            <small class="text-muted">Assigned Assets</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-info">{{ recent_activities|length }}</h4>
+                        <small class="text-muted">Recent Activities</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Date Joined:</span>
+                        <span>{{ user_obj.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Last Login:</span>
+                        <span>
+                            {% if user_obj.last_login %}
+                                {{ user_obj.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Status:</span>
+                        <span>
+                            {% if user_obj.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Information -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Account Information
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>User ID:</strong> {{ user_obj.id }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Username:</strong> {{ user_obj.username }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Email Verified:</strong> 
+                        {% if user_obj.email %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-warning">No</span>
+                        {% endif %}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Permissions:</strong>
+                        <div class="mt-1">
+                            {% if user_obj.is_superuser %}
+                                <span class="badge bg-danger">Superuser</span>
+                            {% elif user_obj.is_staff %}
+                                <span class="badge bg-primary">Staff</span>
+                            {% else %}
+                                <span class="badge bg-secondary">User</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

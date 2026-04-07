@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Integration{% endblock %}
+
+{% block extra_css %}
+<style>
+    .crm-nav {
+        background: #f8f9fa;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .crm-nav .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    
+    .crm-nav .nav-link.active {
+        color: #007bff;
+        border-bottom: 2px solid #007bff;
+    }
+    
+    .sync-status {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .sync-status.synced {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .sync-status.pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .sync-status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .assignment-type {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    
+    .assignment-type.owned {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .assignment-type.leased {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .assignment-type.serviced {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid #dee2e6;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+    }
+    
+    .btn-sync {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+    
+    .btn-sync:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="crm-nav">
+    <div class="container">
+        <nav class="nav nav-pills">
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+               href="{% url 'crm_integration:dashboard' %}">Dashboard</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'customer_list' %}active{% endif %}" 
+               href="{% url 'crm_integration:customer_list' %}">Customers</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'assignment_list' %}active{% endif %}" 
+               href="{% url 'crm_integration:assignment_list' %}">Assignments</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'sync_logs' %}active{% endif %}" 
+               href="{% url 'crm_integration:sync_logs' %}">Sync Logs</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" 
+               href="{% url 'crm_integration:settings' %}">Settings</a>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% block crm_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// CSRF token for AJAX requests
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Sync action handler
+function performSync(action, buttonElement) {
+    const originalText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Syncing...';
+    buttonElement.disabled = true;
+    
+    fetch('{% url "crm_integration:sync_action" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `action=${action}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            // Reload page after successful sync
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', data.error || 'Sync failed');
+        }
+    })
+    .catch(error => {
+        showAlert('danger', 'Network error: ' + error.message);
+    })
+    .finally(() => {
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+    });
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

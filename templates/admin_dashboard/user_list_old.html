@@ -1,0 +1,195 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage system users and their profiles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">All Users</h5>
+        <small class="text-muted">{{ page_obj.paginator.count }} total user{{ page_obj.paginator.count|pluralize }}</small>
+    </div>
+    <a href="{% url 'admin_dashboard:user_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add New User
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search Users</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Username, name, email, employee ID...">
+            </div>
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Users</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                    <option value="staff" {% if status == 'staff' %}selected{% endif %}>Staff Only</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Search
+                </button>
+                <a href="{% url 'admin_dashboard:user_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-users me-2"></i>Users
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Employee ID</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        {% if user.profile.avatar %}
+                                            <img src="{{ user.profile.avatar.url }}" alt="Avatar" 
+                                                 class="rounded-circle" width="40" height="40">
+                                        {% else %}
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <span class="text-white fw-bold">
+                                                    {{ user.first_name|first|default:user.username|first|upper }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                                        <div class="text-muted small">{{ user.email }}</div>
+                                        <div class="text-muted small">@{{ user.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.profile.employee_id %}
+                                    <span class="badge bg-info">{{ user.profile.employee_id }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.profile.department %}
+                                    {{ user.profile.department.name }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if user.is_staff %}
+                                    <span class="badge bg-primary ms-1">Staff</span>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <span class="badge bg-danger ms-1">Admin</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_login %}
+                                    <span title="{{ user.last_login }}">{{ user.last_login|timesince }} ago</span>
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'admin_dashboard:user_detail' user.id %}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'admin_dashboard:user_edit' user.id %}" 
+                                       class="btn btn-outline-warning btn-sm" title="Edit User">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'admin_dashboard:user_toggle_active' user.id %}" 
+                                       class="btn btn-outline-{% if user.is_active %}secondary{% else %}success{% endif %} btn-sm" 
+                                       title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %} User">
+                                        <i class="fas fa-{% if user.is_active %}pause{% else %}play{% endif %}"></i>
+                                    </a>
+                                    <a href="{% url 'admin_dashboard:user_delete' user.id %}" 
+                                       class="btn btn-outline-danger btn-sm delete-confirm" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="User pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5>No Users Found</h5>
+                <p class="text-muted">No users match your search criteria.</p>
+                <a href="{% url 'admin_dashboard:user_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First User
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

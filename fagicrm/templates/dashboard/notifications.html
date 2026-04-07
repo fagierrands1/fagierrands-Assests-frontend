@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - FAGI CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Notifications</h1>
+            <p class="text-muted">All your notifications and alerts</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">All Notifications</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                            <i class="fas fa-check-double"></i> Mark All Read
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="clearDismissed()">
+                            <i class="fas fa-trash"></i> Clear Dismissed
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% for notification in notifications %}
+                    <div class="notification-item border-bottom p-3 {% if not notification.is_read %}bg-light{% endif %} {% if notification.is_dismissed %}opacity-50{% endif %}" 
+                         data-notification-id="{{ notification.id }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge badge-notification me-2 
+                                        {% if notification.notification_type == 'success' %}bg-success
+                                        {% elif notification.notification_type == 'warning' %}bg-warning
+                                        {% elif notification.notification_type == 'error' %}bg-danger
+                                        {% elif notification.notification_type == 'task_due' %}bg-info
+                                        {% elif notification.notification_type == 'lead_follow_up' %}bg-primary
+                                        {% else %}bg-secondary{% endif %}">
+                                        {% if notification.notification_type == 'success' %}
+                                            <i class="fas fa-check-circle"></i>
+                                        {% elif notification.notification_type == 'warning' %}
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        {% elif notification.notification_type == 'error' %}
+                                            <i class="fas fa-times-circle"></i>
+                                        {% elif notification.notification_type == 'task_due' %}
+                                            <i class="fas fa-tasks"></i>
+                                        {% elif notification.notification_type == 'lead_follow_up' %}
+                                            <i class="fas fa-user-plus"></i>
+                                        {% elif notification.notification_type == 'service_request' %}
+                                            <i class="fas fa-clipboard-list"></i>
+                                        {% elif notification.notification_type == 'kpi_alert' %}
+                                            <i class="fas fa-chart-line"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle"></i>
+                                        {% endif %}
+                                        {{ notification.get_notification_type_display }}
+                                    </span>
+                                    {% if not notification.is_read %}
+                                        <span class="badge bg-primary">New</span>
+                                    {% endif %}
+                                    {% if notification.is_dismissed %}
+                                        <span class="badge bg-secondary ms-2">Dismissed</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <h6 class="mb-1 {% if not notification.is_read %}fw-bold{% endif %}">
+                                    {{ notification.title }}
+                                </h6>
+                                
+                                <p class="mb-2 text-muted">{{ notification.message }}</p>
+                                
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ notification.created_at|timesince }} ago
+                                    {% if notification.read_at %}
+                                        • Read {{ notification.read_at|timesince }} ago
+                                    {% endif %}
+                                </small>
+                            </div>
+                            
+                            <div class="notification-actions ms-3">
+                                <div class="btn-group btn-group-sm">
+                                    {% if not notification.is_read %}
+                                        <button class="btn btn-outline-primary btn-sm" onclick="markAsRead({{ notification.id }})">
+                                            <i class="fas fa-check"></i> Mark Read
+                                        </button>
+                                    {% endif %}
+                                    
+                                    {% if not notification.is_dismissed %}
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="dismissNotification({{ notification.id }})">
+                                            <i class="fas fa-times"></i> Dismiss
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <!-- Action buttons based on notification type -->
+                                    {% if notification.customer_id %}
+                                        <a href="/admin/customers/customer/{{ notification.customer_id }}/change/" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-user"></i> View Customer
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if notification.lead_id %}
+                                        <a href="/admin/customers/lead/{{ notification.lead_id }}/change/" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-user-plus"></i> View Lead
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if notification.service_request_id %}
+                                        <a href="/admin/services/servicerequest/{{ notification.service_request_id }}/change/" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-clipboard-list"></i> View Request
+                                        </a>
+                                    {% endif %}
+                                    
+                                    {% if notification.task_id %}
+                                        <a href="/admin/tracking/task/{{ notification.task_id }}/change/" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-tasks"></i> View Task
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center p-5 text-muted">
+                        <i class="fas fa-bell-slash fa-3x mb-3"></i>
+                        <h5>No Notifications</h5>
+                        <p>You're all caught up! No new notifications at this time.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+.badge-notification {
+    font-size: 0.75em;
+    padding: 0.25em 0.5em;
+}
+
+.notification-actions {
+    min-width: 200px;
+}
+</style>
+
+<script>
+function markAsRead(notificationId) {
+    fetch(`/dashboard/notifications/${notificationId}/read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function dismissNotification(notificationId) {
+    fetch(`/dashboard/notifications/${notificationId}/dismiss/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function markAllAsRead() {
+    const unreadNotifications = document.querySelectorAll('.notification-item.bg-light');
+    unreadNotifications.forEach(item => {
+        const notificationId = item.dataset.notificationId;
+        markAsRead(notificationId);
+    });
+}
+
+function clearDismissed() {
+    if (confirm('Are you sure you want to permanently delete all dismissed notifications?')) {
+        // This would require a separate endpoint to delete dismissed notifications
+        alert('Feature not implemented yet');
+    }
+}
+</script>
+{% endblock %}

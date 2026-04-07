@@ -1,0 +1,541 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}
+    <div class="d-flex align-items-center">
+        <div class="dashboard-icon me-3">
+            <i class="fas fa-tachometer-alt"></i>
+        </div>
+        <div>
+            <h1 class="mb-0">Admin Dashboard</h1>
+            <p class="mb-0 text-muted">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+        </div>
+    </div>
+{% endblock %}
+{% block page_subtitle %}System overview and comprehensive management{% endblock %}
+
+{% block content %}
+<!-- Enhanced Statistics Cards -->
+<div class="stats-grid mb-4">
+    <!-- Total Assets Card -->
+    <div class="enhanced-stat-card" data-aos="fade-up" data-aos-delay="100">
+        <div class="stat-card-header">
+            <div class="stat-icon-wrapper primary">
+                <i class="fas fa-laptop"></i>
+            </div>
+            <div class="stat-trend">
+                <span class="trend-indicator positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>12%</span>
+                </span>
+            </div>
+        </div>
+        <div class="stat-content">
+            <h2 class="stat-number">{{ total_assets|default:0 }}</h2>
+            <p class="stat-title">Total Assets</p>
+            <div class="stat-progress">
+                <div class="progress-bar" style="width: 75%"></div>
+            </div>
+            <p class="stat-subtitle">{{ active_assets|default:0 }} active • {{ total_assets|add:"-"|add:active_assets|default:0 }} inactive</p>
+        </div>
+        <div class="stat-footer">
+            <a href="{% url 'admin_dashboard:asset_list' %}" class="stat-link">
+                View Assets <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Active Users Card -->
+    <div class="enhanced-stat-card" data-aos="fade-up" data-aos-delay="200">
+        <div class="stat-card-header">
+            <div class="stat-icon-wrapper success">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-trend">
+                <span class="trend-indicator positive">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>5%</span>
+                </span>
+            </div>
+        </div>
+        <div class="stat-content">
+            <h2 class="stat-number">{{ active_users|default:0 }}</h2>
+            <p class="stat-title">Active Users</p>
+            <div class="stat-progress">
+                <div class="progress-bar success" style="width: 85%"></div>
+            </div>
+            <p class="stat-subtitle">{{ total_users|default:0 }} total • {{ active_users|default:0 }} active</p>
+        </div>
+        <div class="stat-footer">
+            <a href="{% url 'admin_dashboard:user_list' %}" class="stat-link">
+                Manage Users <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Maintenance Due Card -->
+    <div class="enhanced-stat-card" data-aos="fade-up" data-aos-delay="300">
+        <div class="stat-card-header">
+            <div class="stat-icon-wrapper warning">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="stat-trend">
+                <span class="trend-indicator negative">
+                    <i class="fas fa-arrow-down"></i>
+                    <span>3%</span>
+                </span>
+            </div>
+        </div>
+        <div class="stat-content">
+            <h2 class="stat-number">{{ maintenance_due|length|default:0 }}</h2>
+            <p class="stat-title">Needs Maintenance</p>
+            <div class="stat-progress">
+                <div class="progress-bar warning" style="width: 35%"></div>
+            </div>
+            <p class="stat-subtitle">Scheduled maintenance required</p>
+        </div>
+        <div class="stat-footer">
+            <a href="#" class="stat-link">
+                View Schedule <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- System Health Card -->
+    <div class="enhanced-stat-card" data-aos="fade-up" data-aos-delay="400">
+        <div class="stat-card-header">
+            <div class="stat-icon-wrapper info">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="stat-trend">
+                <span class="trend-indicator positive">
+                    <i class="fas fa-plus"></i>
+                    <span>{{ new_devices|default:0 }}</span>
+                </span>
+            </div>
+        </div>
+        <div class="stat-content">
+            <h2 class="stat-number">{{ discovered_devices|default:0 }}</h2>
+            <p class="stat-title">Discovered Devices</p>
+            <div class="stat-progress">
+                <div class="progress-bar info" style="width: 60%"></div>
+            </div>
+            <p class="stat-subtitle">Network discovery active</p>
+        </div>
+        <div class="stat-footer">
+            <a href="{% url 'admin_dashboard:discovery_admin' %}" class="stat-link">
+                View Discovery <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Quick Actions -->
+<div class="quick-actions-section mb-4" data-aos="fade-up" data-aos-delay="500">
+    <div class="section-header mb-4">
+        <h3 class="section-title">
+            <i class="fas fa-rocket me-2"></i>Quick Actions
+        </h3>
+        <p class="section-subtitle">Frequently used administrative tasks</p>
+    </div>
+    
+    <div class="quick-actions-grid">
+        <!-- Add Asset Action -->
+        <div class="quick-action-card primary" data-aos="zoom-in" data-aos-delay="600">
+            <div class="action-icon">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="action-content">
+                <h4>Add Asset</h4>
+                <p>Create new asset record</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-laptop me-1"></i>
+                        {{ total_assets|default:0 }} total
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:asset_create' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- Add User Action -->
+        <div class="quick-action-card success" data-aos="zoom-in" data-aos-delay="700">
+            <div class="action-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="action-content">
+                <h4>Add User</h4>
+                <p>Create user account</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-users me-1"></i>
+                        {{ total_users|default:0 }} users
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:user_create' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- Generate QR Codes Action -->
+        <div class="quick-action-card info" data-aos="zoom-in" data-aos-delay="800">
+            <div class="action-icon">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <div class="action-content">
+                <h4>QR Codes</h4>
+                <p>Generate user QR codes</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-mobile-alt me-1"></i>
+                        Bulk generation
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:bulk_user_qr_codes' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- System Analytics Action -->
+        <div class="quick-action-card warning" data-aos="zoom-in" data-aos-delay="900">
+            <div class="action-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="action-content">
+                <h4>Analytics</h4>
+                <p>System insights & logs</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-activity me-1"></i>
+                        Live monitoring
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:system_logs' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- Network Discovery Action -->
+        <div class="quick-action-card danger" data-aos="zoom-in" data-aos-delay="1000">
+            <div class="action-icon">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <div class="action-content">
+                <h4>Discovery</h4>
+                <p>Network device scan</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-search me-1"></i>
+                        {{ discovered_devices|default:0 }} found
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:discovery_admin' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        
+        <!-- Categories Management Action -->
+        <div class="quick-action-card secondary" data-aos="zoom-in" data-aos-delay="1100">
+            <div class="action-icon">
+                <i class="fas fa-tags"></i>
+            </div>
+            <div class="action-content">
+                <h4>Categories</h4>
+                <p>Organize assets</p>
+                <div class="action-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-folder me-1"></i>
+                        Management
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'admin_dashboard:category_list' %}" class="action-link">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Main Content Grid -->
+<div class="row g-4">
+    <!-- Recent Activities -->
+    <div class="col-lg-8">
+        <div class="enhanced-card" data-aos="fade-right" data-aos-delay="1200">
+            <div class="card-header-enhanced">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-activity"></i>
+                    </div>
+                    <div class="header-text">
+                        <h4>Recent Activities</h4>
+                        <p>Latest system events and user actions</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshActivities()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <a href="{% url 'admin_dashboard:system_logs' %}" class="btn btn-primary btn-sm">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body-enhanced">
+                {% if recent_activities %}
+                    <div class="activity-timeline">
+                        {% for activity in recent_activities|slice:":8" %}
+                        <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:1200 }}">
+                            <div class="timeline-marker">
+                                <div class="timeline-icon 
+                                    {% if activity.action == 'login' %}bg-success
+                                    {% elif activity.action == 'create' %}bg-primary
+                                    {% elif activity.action == 'update' %}bg-warning
+                                    {% elif activity.action == 'delete' %}bg-danger
+                                    {% else %}bg-info{% endif %}">
+                                    {% if activity.action == 'login' %}
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    {% elif activity.action == 'create' %}
+                                        <i class="fas fa-plus"></i>
+                                    {% elif activity.action == 'update' %}
+                                        <i class="fas fa-edit"></i>
+                                    {% elif activity.action == 'delete' %}
+                                        <i class="fas fa-trash"></i>
+                                    {% else %}
+                                        <i class="fas fa-info"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <div class="user-info">
+                                        <div class="user-avatar">
+                                            {{ activity.user.first_name|first|default:activity.user.username|first|upper }}
+                                        </div>
+                                        <div class="user-details">
+                                            <h6 class="user-name">{{ activity.user.get_full_name|default:activity.user.username }}</h6>
+                                            <span class="user-handle">@{{ activity.user.username }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="activity-time">
+                                        <span class="time-badge">{{ activity.timestamp|timesince }} ago</span>
+                                    </div>
+                                </div>
+                                <div class="timeline-body">
+                                    <p class="activity-description">{{ activity.description }}</p>
+                                    <div class="activity-meta">
+                                        <span class="action-badge 
+                                            {% if activity.action == 'login' %}success
+                                            {% elif activity.action == 'create' %}primary
+                                            {% elif activity.action == 'update' %}warning
+                                            {% elif activity.action == 'delete' %}danger
+                                            {% else %}info{% endif %}">
+                                            {{ activity.action|title }}
+                                        </span>
+                                        <span class="activity-timestamp">{{ activity.timestamp|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-history fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Recent Activities</h5>
+                        <p class="text-muted">System activities will appear here</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Right Sidebar -->
+    <div class="col-lg-4">
+        <!-- System Health Monitor -->
+        <div class="enhanced-card mb-4" data-aos="fade-left" data-aos-delay="1300">
+            <div class="card-header-enhanced">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="header-text">
+                        <h4>System Health</h4>
+                        <p>Real-time monitoring</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-enhanced">
+                <div class="health-metrics">
+                    <div class="health-metric" data-aos="fade-up" data-aos-delay="1400">
+                        <div class="metric-icon success">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h6>Server Status</h6>
+                            <div class="metric-value success">Online</div>
+                        </div>
+                        <div class="metric-indicator success"></div>
+                    </div>
+                    
+                    <div class="health-metric" data-aos="fade-up" data-aos-delay="1500">
+                        <div class="metric-icon warning">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h6>Database</h6>
+                            <div class="metric-value warning">85% Usage</div>
+                        </div>
+                        <div class="metric-indicator warning"></div>
+                    </div>
+                    
+                    <div class="health-metric" data-aos="fade-up" data-aos-delay="1600">
+                        <div class="metric-icon info">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h6>Network</h6>
+                            <div class="metric-value info">Stable</div>
+                        </div>
+                        <div class="metric-indicator info"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Asset Status Distribution -->
+        <div class="enhanced-card mb-4" data-aos="fade-left" data-aos-delay="1700">
+            <div class="card-header-enhanced">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="header-text">
+                        <h4>Asset Distribution</h4>
+                        <p>Status breakdown</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-enhanced">
+                <div class="status-distribution">
+                    {% for status in asset_status_stats %}
+                    <div class="status-item" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:1700 }}">
+                        <div class="status-info">
+                            <div class="status-dot 
+                                {% if status.status == 'active' %}bg-success
+                                {% elif status.status == 'inactive' %}bg-secondary
+                                {% elif status.status == 'maintenance' %}bg-warning
+                                {% elif status.status == 'retired' %}bg-dark
+                                {% else %}bg-danger{% endif %}"></div>
+                            <div>
+                                <div class="status-label">{{ status.status|title }}</div>
+                                <div class="status-progress">
+                                    <div class="status-progress-bar 
+                                        {% if status.status == 'active' %}bg-success
+                                        {% elif status.status == 'inactive' %}bg-secondary
+                                        {% elif status.status == 'maintenance' %}bg-warning
+                                        {% elif status.status == 'retired' %}bg-dark
+                                        {% else %}bg-danger{% endif %}" 
+                                        style="width: {% if total_assets %}{% widthratio status.count total_assets 100 %}{% else %}0{% endif %}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="status-count">{{ status.count }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">No asset data available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="enhanced-card" data-aos="fade-left" data-aos-delay="2000">
+            <div class="card-header-enhanced">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="header-text">
+                        <h4>Quick Stats</h4>
+                        <p>Key metrics</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-enhanced">
+                <div class="quick-stats">
+                    <div class="quick-stat-item" data-aos="zoom-in" data-aos-delay="2100">
+                        <div class="stat-icon-small primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number-small">{{ active_users|default:0 }}</div>
+                            <div class="stat-label-small">Active Users</div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-stat-item" data-aos="zoom-in" data-aos-delay="2200">
+                        <div class="stat-icon-small success">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number-small">{{ active_assets|default:0 }}</div>
+                            <div class="stat-label-small">Active Assets</div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-stat-item" data-aos="zoom-in" data-aos-delay="2300">
+                        <div class="stat-icon-small warning">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number-small">{{ maintenance_due|length|default:0 }}</div>
+                            <div class="stat-label-small">Maintenance</div>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-stat-item" data-aos="zoom-in" data-aos-delay="2400">
+                        <div class="stat-icon-small info">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <div class="stat-details">
+                            <div class="stat-number-small">{{ discovered_devices|default:0 }}</div>
+                            <div class="stat-label-small">Discovered</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Dashboard Interactions -->
+<script>
+function refreshActivities() {
+    // Add refresh functionality
+    const btn = event.target.closest('button');
+    const icon = btn.querySelector('i');
+    
+    icon.classList.add('fa-spin');
+    
+    setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        // Here you would typically reload the activities via AJAX
+        location.reload();
+    }, 1000);
+}
+
+// Auto-refresh activities every 30 seconds
+setInterval(() => {
+    // You can implement AJAX refresh here
+}, 30000);
+</script>
+{% endblock %}

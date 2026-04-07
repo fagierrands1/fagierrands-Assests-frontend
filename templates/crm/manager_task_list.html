@@ -1,0 +1,250 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Manage Tasks{% endblock %}
+{% block page_header %}Task Management{% endblock %}
+{% block page_subtitle %}Assign and manage tasks for your team{% endblock %}
+
+{% block employee_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tasks me-2 text-primary"></i>All Tasks</h2>
+    <a href="{% url 'crm:manager_create_task' %}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-2"></i>Assign New Task
+    </a>
+</div>
+
+<!-- Task Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ total_tasks }}</h3>
+                <p class="text-muted mb-0">Total Tasks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ pending_tasks }}</h3>
+                <p class="text-muted mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ in_progress_tasks }}</h3>
+                <p class="text-muted mb-0">In Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ completed_tasks }}</h3>
+                <p class="text-muted mb-0">Completed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="">All Priorities</option>
+                    {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="employee" class="form-label">Employee</label>
+                <select class="form-select" id="employee" name="employee">
+                    <option value="">All Employees</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>
+                            {{ emp.full_name }} - {{ emp.position }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>Tasks ({{ page_obj.paginator.count }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Assigned To</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Hours</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in page_obj %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ task.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ task.description|truncatechars:60 }}</small>
+                                    {% if task.customer %}
+                                        <br><small class="text-info"><i class="fas fa-user me-1"></i>{{ task.customer.name }}</small>
+                                    {% endif %}
+                                    {% if task.lead %}
+                                        <br><small class="text-warning"><i class="fas fa-star me-1"></i>{{ task.lead.company }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                                    <div>
+                                        <div>{{ task.assigned_to.full_name }}</div>
+                                        <small class="text-muted">{{ task.assigned_to.position }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% elif task.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                                    {{ task.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if task.status == 'completed' %}success{% elif task.status == 'in_progress' %}info{% elif task.status == 'cancelled' %}dark{% else %}warning{% endif %}">
+                                    {{ task.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if task.due_date %}
+                                    <span class="{% if task.due_date < now and task.status != 'completed' %}text-danger{% endif %}">
+                                        {{ task.due_date|date:"M d, Y" }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">No due date</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if task.estimated_hours %}
+                                    <small>Est: {{ task.estimated_hours }}h</small>
+                                {% endif %}
+                                {% if task.actual_hours %}
+                                    <br><small class="text-success">Act: {{ task.actual_hours }}h</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'crm:manager_edit_task' task.id %}" class="btn btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteTask({{ task.id }}, '{{ task.title }}')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Task pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <h5>No Tasks Found</h5>
+                <p class="text-muted">Start by creating a new task for your team.</p>
+                <a href="{% url 'crm:manager_create_task' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Create First Task
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block employee_js %}
+<script>
+function deleteTask(taskId, taskTitle) {
+    if (confirm(`Are you sure you want to delete the task "${taskTitle}"?`)) {
+        fetch(`/crm/manager/tasks/${taskId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error deleting task: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting task: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

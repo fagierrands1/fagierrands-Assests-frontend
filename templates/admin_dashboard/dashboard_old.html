@@ -1,0 +1,313 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Admin Dashboard - Asset Management{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block page_subtitle %}System overview and statistics{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card primary">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                        <div class="text-xs text-success">
+                            <i class="fas fa-check-circle"></i> {{ active_users }} active
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card success">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Assets</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_assets }}</div>
+                        <div class="text-xs text-success">
+                            <i class="fas fa-check-circle"></i> {{ active_assets }} active
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-laptop fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card info">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Discovered Devices</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ discovered_devices }}</div>
+                        <div class="text-xs text-warning">
+                            <i class="fas fa-exclamation-triangle"></i> {{ new_devices }} new
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-search fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card warning">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Maintenance Due</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ maintenance_due|length }}</div>
+                        <div class="text-xs text-muted">
+                            <i class="fas fa-calendar"></i> Next 7 days
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-wrench fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Asset Status Chart -->
+<div class="row mb-4">
+    <div class="col-xl-8 col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i>Asset Status Distribution
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for status in asset_status_stats %}
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                {% if status.status == 'active' %}
+                                    <span class="badge bg-success">{{ status.count }}</span>
+                                {% elif status.status == 'inactive' %}
+                                    <span class="badge bg-secondary">{{ status.count }}</span>
+                                {% elif status.status == 'maintenance' %}
+                                    <span class="badge bg-warning">{{ status.count }}</span>
+                                {% elif status.status == 'retired' %}
+                                    <span class="badge bg-dark">{{ status.count }}</span>
+                                {% elif status.status == 'lost' %}
+                                    <span class="badge bg-danger">{{ status.count }}</span>
+                                {% elif status.status == 'stolen' %}
+                                    <span class="badge bg-danger">{{ status.count }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold">{{ status.status|title }}</div>
+                                <div class="text-muted small">{{ status.count }} asset{{ status.count|pluralize }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-lg-5">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tools me-2"></i>Maintenance Due Soon
+            </div>
+            <div class="card-body">
+                {% if maintenance_due %}
+                    {% for maintenance in maintenance_due %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-warning">{{ maintenance.maintenance_type|title }}</span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="fw-bold">{{ maintenance.asset.asset_tag }}</div>
+                            <div class="text-muted small">{{ maintenance.title }}</div>
+                            <div class="text-muted small">
+                                <i class="fas fa-calendar me-1"></i>{{ maintenance.scheduled_date|date:"M d, Y" }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="text-center">
+                        <a href="{% url 'admin_dashboard:asset_list' %}?maintenance=due" class="btn btn-outline-warning btn-sm">
+                            View All Maintenance
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No maintenance due in the next 7 days</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-xl-6 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i>Recent User Activities
+            </div>
+            <div class="card-body">
+                {% if recent_activities %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td style="width: 40px;">
+                                        {% if activity.action == 'login' %}
+                                            <i class="fas fa-sign-in-alt text-success"></i>
+                                        {% elif activity.action == 'logout' %}
+                                            <i class="fas fa-sign-out-alt text-muted"></i>
+                                        {% elif activity.action == 'create' %}
+                                            <i class="fas fa-plus text-primary"></i>
+                                        {% elif activity.action == 'update' %}
+                                            <i class="fas fa-edit text-warning"></i>
+                                        {% elif activity.action == 'delete' %}
+                                            <i class="fas fa-trash text-danger"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-info"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ activity.user.get_full_name|default:activity.user.username }}</div>
+                                        <div class="text-muted small">{{ activity.description }}</div>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-clock me-1"></i>{{ activity.timestamp|timesince }} ago
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'admin_dashboard:system_logs' %}" class="btn btn-outline-primary btn-sm">
+                            View All Activities
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-history fa-2x mb-2"></i>
+                        <p>No recent activities</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-laptop me-2"></i>Recent Asset Changes
+            </div>
+            <div class="card-body">
+                {% if recent_asset_changes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                {% for change in recent_asset_changes %}
+                                <tr>
+                                    <td style="width: 40px;">
+                                        {% if change.action == 'created' %}
+                                            <i class="fas fa-plus text-success"></i>
+                                        {% elif change.action == 'updated' %}
+                                            <i class="fas fa-edit text-warning"></i>
+                                        {% elif change.action == 'assigned' %}
+                                            <i class="fas fa-user-plus text-info"></i>
+                                        {% elif change.action == 'moved' %}
+                                            <i class="fas fa-arrows-alt text-primary"></i>
+                                        {% elif change.action == 'status_changed' %}
+                                            <i class="fas fa-exchange-alt text-warning"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ change.asset.asset_tag }}</div>
+                                        <div class="text-muted small">{{ change.description }}</div>
+                                        <div class="text-muted small">
+                                            <i class="fas fa-user me-1"></i>{{ change.user.get_full_name|default:change.user.username }}
+                                            <i class="fas fa-clock ms-2 me-1"></i>{{ change.timestamp|timesince }} ago
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'admin_dashboard:asset_list' %}" class="btn btn-outline-primary btn-sm">
+                            View All Assets
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-laptop fa-2x mb-2"></i>
+                        <p>No recent asset changes</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:user_create' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                            Add New User
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:asset_create' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-laptop fa-2x mb-2"></i><br>
+                            Add New Asset
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:category_create' %}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-tags fa-2x mb-2"></i><br>
+                            Add Category
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'admin_dashboard:network_range_create' %}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-network-wired fa-2x mb-2"></i><br>
+                            Add Network Range
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

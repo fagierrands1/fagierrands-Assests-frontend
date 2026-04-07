@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee KPIs - FAGI CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Employee Performance - {{ employee.full_name }}</h1>
+            <p class="text-muted">{{ employee.position }} • {{ employee.department.name }}</p>
+        </div>
+    </div>
+
+    <!-- Current Month Performance -->
+    {% if current_performance %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Current Month Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-primary">{{ current_performance.overall_score|floatformat:1 }}%</h3>
+                            <p class="text-muted">Overall Score</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-success">${{ current_performance.revenue_generated|floatformat:2 }}</h3>
+                            <p class="text-muted">Revenue Generated</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-info">{{ current_performance.deals_closed }}</h3>
+                            <p class="text-muted">Deals Closed</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3 class="text-warning">{{ current_performance.customer_satisfaction|floatformat:1 }}/5.0</h3>
+                            <p class="text-muted">Customer Satisfaction</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Target Achievement -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Sales Target Achievement</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Monthly Target: ${{ employee.monthly_sales_target|floatformat:2 }}</span>
+                        <span>{{ current_performance.sales_target_achievement|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div class="progress-bar {% if current_performance.sales_target_achievement >= 100 %}bg-success{% elif current_performance.sales_target_achievement >= 80 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ current_performance.sales_target_achievement|floatformat:0 }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted">Current: ${{ current_performance.revenue_generated|floatformat:2 }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Activity Target Achievement</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Activity Score</span>
+                        <span>{{ current_performance.activity_target_achievement|floatformat:1 }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div class="progress-bar {% if current_performance.activity_target_achievement >= 100 %}bg-success{% elif current_performance.activity_target_achievement >= 80 %}bg-info{% else %}bg-warning{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ current_performance.activity_target_achievement|floatformat:0 }}%">
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Calls: {{ employee.monthly_calls_target }}</small>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Meetings: {{ employee.monthly_meetings_target }}</small>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Tasks: Target</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Trends -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">6-Month Performance Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" width="400" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Monthly Performance History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Overall Score</th>
+                                    <th>Revenue</th>
+                                    <th>Deals Closed</th>
+                                    <th>Conversion Rate</th>
+                                    <th>Customer Satisfaction</th>
+                                    <th>Sales Target</th>
+                                    <th>Activity Target</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for month_data in months_data %}
+                                <tr>
+                                    <td>{{ month_data.month|date:"M Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if month_data.overall_score >= 90 %}bg-success{% elif month_data.overall_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ month_data.overall_score|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>${{ month_data.revenue_generated|floatformat:2 }}</td>
+                                    <td>{{ month_data.deals_closed }}</td>
+                                    <td>{{ month_data.conversion_rate|floatformat:1 }}%</td>
+                                    <td>{{ month_data.customer_satisfaction|floatformat:1 }}/5.0</td>
+                                    <td>
+                                        <span class="badge {% if month_data.sales_target_achievement >= 100 %}bg-success{% elif month_data.sales_target_achievement >= 80 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ month_data.sales_target_achievement|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if month_data.activity_target_achievement >= 100 %}bg-success{% elif month_data.activity_target_achievement >= 80 %}bg-info{% else %}bg-warning{% endif %}">
+                                            {{ month_data.activity_target_achievement|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Performance Trend Chart
+const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+new Chart(performanceCtx, {
+    type: 'line',
+    data: {
+        labels: [
+            {% for month_data in months_data %}
+            '{{ month_data.month|date:"M Y" }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Overall Score',
+            data: [
+                {% for month_data in months_data %}
+                {{ month_data.overall_score }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Sales Target Achievement',
+            data: [
+                {% for month_data in months_data %}
+                {{ month_data.sales_target_achievement }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Activity Target Achievement',
+            data: [
+                {% for month_data in months_data %}
+                {{ month_data.activity_target_achievement }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            borderColor: '#17a2b8',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,504 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Asset Management - Admin Dashboard{% endblock %}
+{% block page_title %}Asset Management{% endblock %}
+{% block page_subtitle %}Manage all system assets and inventory{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Assets</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0 fw-bold">All Assets</h5>
+        <small class="text-muted">{{ page_obj.paginator.count|default:0 }} total asset{{ page_obj.paginator.count|pluralize }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="exportAssets()">
+            <i class="fas fa-download me-2"></i>Export
+        </button>
+        <button class="btn btn-outline-info" onclick="printLabels()">
+            <i class="fas fa-qrcode me-2"></i>Print Labels
+        </button>
+        <a href="{% url 'admin_dashboard:asset_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New Asset
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>Search & Filter
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search Assets</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Asset tag, name, serial...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Status</option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="category" class="form-label">Category</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="location" class="form-label">Location</label>
+                <select class="form-select" id="location" name="location">
+                    <option value="">All Locations</option>
+                    {% for loc in locations %}
+                        <option value="{{ loc.id }}" {% if location == loc.id|stringformat:"s" %}selected{% endif %}>{{ loc.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="assigned" class="form-label">Assignment</label>
+                <select class="form-select" id="assigned" name="assigned">
+                    <option value="">All Assets</option>
+                    <option value="assigned" {% if assigned == 'assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="unassigned" {% if assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <div class="btn-group w-100" role="group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <a href="{% url 'admin_dashboard:asset_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assets Grid/Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-laptop me-2"></i>Assets
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="view-mode" id="grid-view" checked>
+            <label class="btn btn-outline-primary" for="grid-view"><i class="fas fa-th"></i></label>
+            
+            <input type="radio" class="btn-check" name="view-mode" id="table-view">
+            <label class="btn btn-outline-primary" for="table-view"><i class="fas fa-list"></i></label>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <!-- Grid View -->
+            <div id="grid-container" class="row g-4">
+                {% for asset in page_obj %}
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    <div class="card h-100 asset-card">
+                        <div class="card-body">
+                            <!-- Asset Header -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h6 class="card-title mb-1 fw-bold">{{ asset.asset_tag }}</h6>
+                                    <p class="text-muted small mb-0">{{ asset.name|truncatechars:25 }}</p>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:asset_detail' asset.id %}">
+                                            <i class="fas fa-eye me-2"></i>View Details
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:asset_edit' asset.id %}">
+                                            <i class="fas fa-edit me-2"></i>Edit Asset
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/assets/{{ asset.id }}/qr-label/" target="_blank">
+                                            <i class="fas fa-qrcode me-2"></i>Print QR Label
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger delete-confirm" href="{% url 'admin_dashboard:asset_delete' asset.id %}">
+                                            <i class="fas fa-trash me-2"></i>Delete Asset
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Asset Status -->
+                            <div class="mb-3">
+                                {% if asset.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif asset.status == 'inactive' %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% elif asset.status == 'maintenance' %}
+                                    <span class="badge bg-warning">Maintenance</span>
+                                {% elif asset.status == 'retired' %}
+                                    <span class="badge bg-dark">Retired</span>
+                                {% elif asset.status == 'lost' %}
+                                    <span class="badge bg-danger">Lost</span>
+                                {% elif asset.status == 'stolen' %}
+                                    <span class="badge bg-danger">Stolen</span>
+                                {% endif %}
+                                <span class="badge bg-info ms-1">{{ asset.model.category.name }}</span>
+                            </div>
+                            
+                            <!-- Asset Details -->
+                            <div class="small mb-3">
+                                <div class="mb-2">
+                                    <i class="fas fa-industry text-muted me-2"></i>
+                                    <strong>{{ asset.model.manufacturer.name }}</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <i class="fas fa-cube text-muted me-2"></i>
+                                    {{ asset.model.name }}
+                                </div>
+                                {% if asset.serial_number %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-barcode text-muted me-2"></i>
+                                        {{ asset.serial_number|truncatechars:20 }}
+                                    </div>
+                                {% endif %}
+                                {% if asset.assigned_to %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-user text-muted me-2"></i>
+                                        {{ asset.assigned_to.get_full_name|default:asset.assigned_to.username|truncatechars:20 }}
+                                    </div>
+                                {% endif %}
+                                {% if asset.location %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                        {{ asset.location.name|truncatechars:20 }}
+                                    </div>
+                                {% endif %}
+                                {% if asset.last_seen %}
+                                    <div class="mb-2">
+                                        <i class="fas fa-clock text-muted me-2"></i>
+                                        {{ asset.last_seen|timesince }} ago
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'admin_dashboard:asset_detail' asset.id %}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'admin_dashboard:asset_edit' asset.id %}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="/assets/{{ asset.id }}/qr-label/" target="_blank"
+                                   class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-qrcode"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Table View (Hidden by default) -->
+            <div id="table-container" class="d-none">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Model</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th>Location</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asset in page_obj %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ asset.asset_tag }}</div>
+                                        <div class="text-muted small">{{ asset.name }}</div>
+                                        {% if asset.serial_number %}
+                                            <div class="text-muted small">SN: {{ asset.serial_number }}</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ asset.model.manufacturer.name }}</div>
+                                        <div class="text-muted small">{{ asset.model.name }}</div>
+                                        <span class="badge bg-info">{{ asset.model.category.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if asset.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif asset.status == 'inactive' %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% elif asset.status == 'maintenance' %}
+                                        <span class="badge bg-warning">Maintenance</span>
+                                    {% elif asset.status == 'retired' %}
+                                        <span class="badge bg-dark">Retired</span>
+                                    {% elif asset.status == 'lost' %}
+                                        <span class="badge bg-danger">Lost</span>
+                                    {% elif asset.status == 'stolen' %}
+                                        <span class="badge bg-danger">Stolen</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if asset.assigned_to %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                 style="width: 30px; height: 30px;">
+                                                <span class="text-white small fw-bold">
+                                                    {{ asset.assigned_to.first_name|first|default:asset.assigned_to.username|first|upper }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold small">{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}</div>
+                                                {% if asset.assigned_to.profile.employee_id %}
+                                                    <div class="text-muted small">{{ asset.assigned_to.profile.employee_id }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Unassigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if asset.location %}
+                                        <i class="fas fa-map-marker-alt text-muted me-1"></i>{{ asset.location.name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if asset.last_seen %}
+                                        <div class="small">{{ asset.last_seen|date:"M d, Y" }}</div>
+                                        <div class="small text-muted" title="{{ asset.last_seen }}">{{ asset.last_seen|timesince }} ago</div>
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'admin_dashboard:asset_detail' asset.id %}" 
+                                           class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'admin_dashboard:asset_edit' asset.id %}" 
+                                           class="btn btn-outline-warning btn-sm" title="Edit Asset">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="/assets/{{ asset.id }}/qr-label/" target="_blank"
+                                           class="btn btn-outline-info btn-sm" title="Print QR Label">
+                                            <i class="fas fa-qrcode"></i>
+                                        </a>
+                                        <a href="{% url 'admin_dashboard:asset_delete' asset.id %}" 
+                                           class="btn btn-outline-danger btn-sm delete-confirm" title="Delete Asset">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Asset pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if location %}&location={{ location }}{% endif %}{% if assigned %}&assigned={{ assigned }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if location %}&location={{ location }}{% endif %}{% if assigned %}&assigned={{ assigned }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if location %}&location={{ location }}{% endif %}{% if assigned %}&assigned={{ assigned }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if location %}&location={{ location }}{% endif %}{% if assigned %}&assigned={{ assigned }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-laptop fa-4x text-muted mb-3"></i>
+                <h5>No Assets Found</h5>
+                <p class="text-muted">No assets match your search criteria.</p>
+                <a href="{% url 'admin_dashboard:asset_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First Asset
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.asset-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+
+.asset-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+.dropdown-menu {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// View mode toggle
+document.getElementById('grid-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').classList.remove('d-none');
+        document.getElementById('table-container').classList.add('d-none');
+    }
+});
+
+document.getElementById('table-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').classList.add('d-none');
+        document.getElementById('table-container').classList.remove('d-none');
+    }
+});
+
+// Export function
+function exportAssets() {
+    const table = document.querySelector('#table-container table');
+    if (!table) {
+        alert('Please switch to table view first');
+        return;
+    }
+    
+    let csv = [];
+    const headers = Array.from(table.querySelectorAll('thead th')).slice(0, -1).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).slice(0, -1).map(td => {
+            return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+        });
+        csv.push(cells.join(','));
+    });
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'assets_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Print labels function
+function printLabels() {
+    const selectedAssets = [];
+    const checkboxes = document.querySelectorAll('input[name="selected_assets"]:checked');
+    
+    if (checkboxes.length === 0) {
+        // If no assets selected, open bulk print page
+        window.open('/assets/bulk-print-labels/', '_blank');
+    } else {
+        // Print selected assets
+        checkboxes.forEach(checkbox => {
+            selectedAssets.push(checkbox.value);
+        });
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/assets/bulk-print-labels/';
+        form.target = '_blank';
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        selectedAssets.forEach(assetId => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_assets';
+            input.value = assetId;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+}
+</script>
+{% endblock %}

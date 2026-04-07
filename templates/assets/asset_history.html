@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Asset History - {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Asset History - {{ asset.asset_tag }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'asset_detail' asset.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Asset
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export History
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Asset Summary -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ asset.name }}</h5>
+                        <p class="text-muted mb-0">
+                            {{ asset.model.manufacturer.name }} {{ asset.model.name }} | 
+                            Status: <span class="badge bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% elif asset.status == 'retired' %}danger{% else %}secondary{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <small class="text-muted">
+                            Created: {{ asset.created_at|date:"M d, Y" }}<br>
+                            Last Updated: {{ asset.updated_at|date:"M d, Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History Timeline -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">History Timeline</h5>
+            </div>
+            <div class="card-body">
+                {% if history_records %}
+                <div class="timeline">
+                    {% for record in history_records %}
+                    <div class="timeline-item mb-4">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <div class="timeline-marker bg-{% if record.action == 'created' %}success{% elif record.action == 'updated' %}info{% elif record.action == 'assigned' %}primary{% elif record.action == 'maintenance' %}warning{% elif record.action == 'status_changed' %}secondary{% else %}light{% endif %}">
+                                    <i class="fas {% if record.action == 'created' %}fa-plus{% elif record.action == 'updated' %}fa-edit{% elif record.action == 'assigned' %}fa-user{% elif record.action == 'unassigned' %}fa-user-slash{% elif record.action == 'moved' %}fa-map-marker-alt{% elif record.action == 'status_changed' %}fa-exchange-alt{% elif record.action == 'maintenance' %}fa-tools{% else %}fa-circle{% endif %}"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ record.get_action_display }}</h6>
+                                        <p class="mb-2">{{ record.description }}</p>
+                                        
+                                        <!-- Show changes if available -->
+                                        {% if record.previous_values or record.new_values %}
+                                        <div class="changes-detail">
+                                            {% if record.previous_values %}
+                                            <small class="text-muted">
+                                                <strong>Previous:</strong>
+                                                {% for key, value in record.previous_values.items %}
+                                                    {{ key|title }}: <span class="text-danger">{{ value|default:"N/A" }}</span>{% if not forloop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </small><br>
+                                            {% endif %}
+                                            {% if record.new_values %}
+                                            <small class="text-muted">
+                                                <strong>New:</strong>
+                                                {% for key, value in record.new_values.items %}
+                                                    {{ key|title }}: <span class="text-success">{{ value|default:"N/A" }}</span>{% if not forloop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted text-nowrap ms-3">
+                                        {{ record.timestamp|date:"M d, Y H:i" }}
+                                    </small>
+                                </div>
+                                {% if record.user %}
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>{{ record.user.get_full_name }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="History pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No history records found for this asset.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- History Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">History Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0">{{ total_records }}</h4>
+                            <small class="text-muted">Total Records</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-info mb-0">{{ days_since_created }}</h4>
+                        <small class="text-muted">Days Old</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-warning mb-0">{{ assignment_changes }}</h5>
+                            <small class="text-muted">Assignments</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-secondary mb-0">{{ status_changes }}</h5>
+                        <small class="text-muted">Status Changes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Types -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Action Breakdown</h5>
+            </div>
+            <div class="card-body">
+                {% for action_type in action_breakdown %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted">{{ action_type.action|title }}</span>
+                    <span class="badge bg-secondary">{{ action_type.count }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted mb-0">No action data available</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                {% for activity in recent_activity %}
+                <div class="d-flex align-items-start mb-3">
+                    <i class="fas fa-circle text-primary me-2" style="font-size: 0.5rem; margin-top: 0.5rem;"></i>
+                    <div class="flex-grow-1">
+                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small><br>
+                        <strong>{{ activity.get_action_display }}</strong>
+                        {% if activity.user %}
+                        <br><small class="text-muted">by {{ activity.user.get_full_name }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted mb-0">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+    position: relative;
+    z-index: 1;
+}
+
+.timeline-item:last-child .timeline::before {
+    display: none;
+}
+
+.changes-detail {
+    background: #f8f9fa;
+    border-left: 3px solid #dee2e6;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border-radius: 0 4px 4px 0;
+}
+</style>
+{% endblock %}

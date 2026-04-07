@@ -1,0 +1,165 @@
+{% extends "crm/base.html" %}
+
+{% block page_title %}Create New Lead{% endblock %}
+{% block page_header %}Create New Lead{% endblock %}
+{% block page_subtitle %}Generate and manage new sales prospects{% endblock %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
+    <h1>Create New Lead</h1>
+    <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Leads
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card animate-fade-in-left">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <h5 class="mb-3">
+                        <i class="fas fa-user me-2" style="color: var(--primary);"></i>Contact Information
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="company" class="form-label">Company</label>
+                        <input type="text" class="form-control" id="company" name="company">
+                    </div>
+                    
+                    <!-- Lead Information -->
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-line me-2" style="color: var(--warning);"></i>Lead Details
+                    </h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="source" class="form-label">Lead Source</label>
+                            <select class="form-select" id="source" name="source">
+                                {% for value, label in source_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assign to Employee</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to">
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.get_full_name|default:employee.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Additional information about this lead..."></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-plus-circle me-2"></i>Create Lead
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card animate-fade-in-right">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2" style="color: var(--warning);"></i>Lead Creation Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-3">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        <strong>Required fields</strong> are marked with *
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-user-tie text-primary me-2"></i>
+                        <strong>Assign to employee</strong> for better follow-up
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        <strong>Lead source</strong> helps track marketing effectiveness
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-envelope text-info me-2"></i>
+                        <strong>Email is required</strong> for communication
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-sticky-note text-secondary me-2"></i>
+                        <strong>Add notes</strong> for context and follow-up details
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-4 animate-fade-in-right" style="animation-delay: 0.2s;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-rocket me-2" style="color: var(--success);"></i>Next Steps
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">After creating the lead:</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-phone text-primary me-2"></i>
+                        Schedule follow-up call
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-envelope text-info me-2"></i>
+                        Send welcome email
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-tasks text-warning me-2"></i>
+                        Create follow-up tasks
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-user-check text-success me-2"></i>
+                        Convert to customer when qualified
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

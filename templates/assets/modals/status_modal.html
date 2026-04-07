@@ -1,0 +1,42 @@
+<!-- Change Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Change Asset Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form class="quick-action-form" action="{% url 'asset_change_status' asset.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_status" class="form-label">Current Status</label>
+                        <input type="text" class="form-control" id="current_status" value="{{ asset.get_status_display }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_status" class="form-label">New Status</label>
+                        <select class="form-select" id="new_status" name="status" required>
+                            <option value="">Select new status...</option>
+                            <option value="active" {% if asset.status == 'active' %}disabled{% endif %}>Active</option>
+                            <option value="inactive" {% if asset.status == 'inactive' %}disabled{% endif %}>Inactive</option>
+                            <option value="maintenance" {% if asset.status == 'maintenance' %}disabled{% endif %}>Under Maintenance</option>
+                            <option value="retired" {% if asset.status == 'retired' %}disabled{% endif %}>Retired</option>
+                            <option value="lost" {% if asset.status == 'lost' %}disabled{% endif %}>Lost</option>
+                            <option value="stolen" {% if asset.status == 'stolen' %}disabled{% endif %}>Stolen</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status_reason" class="form-label">Reason for Change</label>
+                        <textarea class="form-control" id="status_reason" name="reason" rows="3" required placeholder="Explain why the status is being changed..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-exchange-alt me-1"></i>Change Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,139 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Assign New Task{% endblock %}
+{% block page_header %}Assign New Task{% endblock %}
+{% block page_subtitle %}Create and assign a task to a team member{% endblock %}
+
+{% block employee_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2 text-primary"></i>New Task Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Task Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required 
+                               placeholder="Enter task title">
+                    </div>
+                    
+                    <!-- Task Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required
+                                  placeholder="Describe the task in detail..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Assign To -->
+                        <div class="col-md-6 mb-3">
+                            <label for="assigned_to" class="form-label">Assign To <span class="text-danger">*</span></label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                <option value="">Select Employee</option>
+                                {% for emp in employees %}
+                                    <option value="{{ emp.id }}">{{ emp.full_name }} - {{ emp.position }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Priority -->
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                            <select class="form-select" id="priority" name="priority" required>
+                                {% for value, label in priority_choices %}
+                                    <option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Due Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                        </div>
+                        
+                        <!-- Estimated Hours -->
+                        <div class="col-md-6 mb-3">
+                            <label for="estimated_hours" class="form-label">Estimated Hours</label>
+                            <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" 
+                                   step="0.5" min="0" placeholder="e.g., 2.5">
+                        </div>
+                    </div>
+                    
+                    <!-- Related Objects -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2">Link to (Optional)</h6>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Customer -->
+                        <div class="col-md-4 mb-3">
+                            <label for="customer" class="form-label">Customer</label>
+                            <select class="form-select" id="customer" name="customer">
+                                <option value="">None</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Lead -->
+                        <div class="col-md-4 mb-3">
+                            <label for="lead" class="form-label">Lead</label>
+                            <select class="form-select" id="lead" name="lead">
+                                <option value="">None</option>
+                                {% for lead in leads %}
+                                    <option value="{{ lead.id }}">{{ lead.company }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Asset -->
+                        <div class="col-md-4 mb-3">
+                            <label for="asset" class="form-label">Asset</label>
+                            <select class="form-select" id="asset" name="asset">
+                                <option value="">None</option>
+                                {% for asset in assets %}
+                                    <option value="{{ asset.id }}">{{ asset.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'crm:manager_task_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-2"></i>Assign Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="text-muted"><i class="fas fa-info-circle me-2"></i>Tips for Creating Tasks</h6>
+                <ul class="text-muted small mb-0">
+                    <li>Be specific and clear in the task title and description</li>
+                    <li>Set realistic due dates and estimated hours</li>
+                    <li>Use priority levels to help employees focus on urgent work</li>
+                    <li>Link tasks to customers, leads, or assets for better tracking</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

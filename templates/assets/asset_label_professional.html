@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Label - {{ asset.asset_tag }}</title>
+    <style>
+        /* Professional Print Styles */
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: white;
+            color: #000;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .label-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        .asset-label {
+            width: 2.5in;
+            height: 2in;
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        .qr-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+        }
+        
+        .qr-code img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .asset-info {
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        .asset-tag {
+            font-weight: bold;
+            font-size: 14px;
+            color: #000;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+        
+        .asset-name {
+            font-size: 10px;
+            color: #333;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+        
+        .asset-details {
+            font-size: 8px;
+            color: #666;
+            line-height: 1.2;
+        }
+        
+        .company-footer {
+            font-size: 7px;
+            color: #999;
+            margin-top: 3px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            padding-top: 2px;
+        }
+        
+        /* Avery 5160 Format */
+        .avery-5160 .label-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            padding: 0;
+        }
+        
+        .avery-5160 .asset-label {
+            width: 2.625in;
+            height: 1in;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px;
+            margin: 0;
+        }
+        
+        .avery-5160 .qr-code {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .avery-5160 .asset-tag {
+            font-size: 10px;
+        }
+        
+        .avery-5160 .asset-name {
+            font-size: 8px;
+        }
+        
+        .avery-5160 .asset-details {
+            font-size: 6px;
+        }
+        
+        .avery-5160 .company-footer {
+            font-size: 5px;
+        }
+        
+        /* Large Format */
+        .large-format .label-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        
+        .large-format .asset-label {
+            width: 3.5in;
+            height: 2.5in;
+            padding: 15px;
+        }
+        
+        .large-format .qr-code {
+            width: 150px;
+            height: 150px;
+        }
+        
+        .large-format .asset-tag {
+            font-size: 18px;
+        }
+        
+        .large-format .asset-name {
+            font-size: 14px;
+        }
+        
+        .large-format .asset-details {
+            font-size: 12px;
+        }
+        
+        .large-format .company-footer {
+            font-size: 10px;
+        }
+        
+        /* Print Styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .page-header {
+                display: none;
+            }
+            
+            .label-grid {
+                padding: 0;
+                gap: 0;
+            }
+            
+            .asset-label {
+                border: 2px solid #000 !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        
+        /* Control Panel */
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .control-panel h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .control-group select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel no-print">
+        <h3>Professional Asset Label Printing</h3>
+        <div class="control-row">
+            <div class="control-group">
+                <label for="format-select">Label Format:</label>
+                <select id="format-select">
+                    <option value="standard">Standard (2.5" × 2")</option>
+                    <option value="avery-5160">Avery 5160 (2.625" × 1")</option>
+                    <option value="large-format">Large Format (3.5" × 2.5")</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="count-select">Number of Labels:</label>
+                <select id="count-select">
+                    <option value="1">1 Label</option>
+                    <option value="2">2 Labels</option>
+                    <option value="4">4 Labels</option>
+                    <option value="6">6 Labels</option>
+                    <option value="8">8 Labels</option>
+                    <option value="12">12 Labels</option>
+                    <option value="20">20 Labels</option>
+                    <option value="30">30 Labels (Avery Sheet)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="control-row">
+            <button class="btn btn-primary" onclick="updatePreview()">Update Preview</button>
+            <button class="btn btn-success" onclick="window.print()">Print Labels</button>
+            <button class="btn btn-secondary" onclick="window.close()">Close</button>
+        </div>
+    </div>
+    
+    <div class="page-header no-print">
+        <h1>Asset Labels for {{ asset.asset_tag }}</h1>
+    </div>
+    
+    <div class="label-grid" id="label-container">
+        <!-- Labels will be generated here -->
+    </div>
+    
+    <script>
+        // Asset data
+        const assetData = {
+            tag: "{{ asset.asset_tag|escapejs }}",
+            name: "{{ asset.name|escapejs }}",
+            model: "{{ asset.model.name|escapejs }}",
+            manufacturer: "{{ asset.model.manufacturer.name|escapejs }}",
+            url: "{{ request.build_absolute_uri|escapejs }}",
+            location: "{{ asset.location.name|default:'Not assigned'|escapejs }}",
+            assignedTo: "{{ asset.assigned_to.get_full_name|default:'Unassigned'|escapejs }}",
+            serialNumber: "{{ asset.serial_number|default:'N/A'|escapejs }}",
+            purchaseDate: "{{ asset.purchase_date|date:'Y-m-d'|default:'N/A'|escapejs }}"
+        };
+        
+        // QR code data URL if available
+        const qrCodeDataUrl = "{{ label_data.qr_image|default:''|escapejs }}";
+        const qrCodeDirectUrl = "{% url 'asset_qr_code_image' asset.id %}";
+        const hasServerQR = {{ label_data.has_qrcode|yesno:"true,false" }};
+        
+        function createLabel() {
+            const label = document.createElement('div');
+            label.className = 'asset-label';
+            
+            // QR Section
+            const qrSection = document.createElement('div');
+            qrSection.className = 'qr-section';
+            
+            const qrCode = document.createElement('div');
+            qrCode.className = 'qr-code';
+            
+            if (hasServerQR) {
+                // Use high-quality server-generated QR code
+                const qrImg = document.createElement('img');
+                qrImg.src = qrCodeDirectUrl + '?size=200';
+                qrImg.alt = 'Asset QR Code';
+                qrImg.style.maxWidth = '100%';
+                qrImg.style.maxHeight = '100%';
+                qrCode.appendChild(qrImg);
+            } else if (qrCodeDataUrl) {
+                // Use embedded QR code data
+                const qrImg = document.createElement('img');
+                qrImg.src = qrCodeDataUrl;
+                qrImg.alt = 'Asset QR Code';
+                qrCode.appendChild(qrImg);
+            } else {
+                // Fallback to JavaScript generation
+                const canvas = document.createElement('canvas');
+                qrCode.appendChild(canvas);
+                
+                // Load QR code library if needed
+                if (typeof QRCode !== 'undefined') {
+                    QRCode.toCanvas(canvas, assetData.url, {
+                        width: 100,
+                        height: 100,
+                        margin: 1,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    });
+                } else {
+                    canvas.style.display = 'none';
+                    qrCode.innerHTML = '<div style="font-size: 10px; color: #666;">QR Code<br>Unavailable</div>';
+                }
+            }
+            
+            qrSection.appendChild(qrCode);
+            
+            // Asset Info
+            const assetInfo = document.createElement('div');
+            assetInfo.className = 'asset-info';
+            assetInfo.innerHTML = `
+                <div class="asset-tag">${assetData.tag}</div>
+                <div class="asset-name">${assetData.name}</div>
+                <div class="asset-details">
+                    ${assetData.manufacturer} ${assetData.model}<br>
+                    ${assetData.location}<br>
+                    ${assetData.assignedTo}
+                </div>
+                <div class="company-footer">
+                    Property of Your Company Name
+                </div>
+            `;
+            
+            label.appendChild(qrSection);
+            label.appendChild(assetInfo);
+            
+            return label;
+        }
+        
+        function updatePreview() {
+            const formatSelect = document.getElementById('format-select');
+            const countSelect = document.getElementById('count-select');
+            const container = document.getElementById('label-container');
+            
+            const format = formatSelect.value;
+            const count = parseInt(countSelect.value);
+            
+            // Update body class for format
+            document.body.className = format;
+            
+            // Clear container
+            container.innerHTML = '';
+            
+            // Generate labels
+            for (let i = 0; i < count; i++) {
+                const label = createLabel();
+                container.appendChild(label);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePreview();
+        });
+        
+        // Update preview when format or count changes
+        document.getElementById('format-select').addEventListener('change', updatePreview);
+        document.getElementById('count-select').addEventListener('change', updatePreview);
+    </script>
+    
+    <!-- Load QR code library for fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</body>
+</html>

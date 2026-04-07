@@ -1,0 +1,294 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Time Tracking{% endblock %}
+{% block page_header %}Time Tracking{% endblock %}
+{% block page_subtitle %}Manage your work hours and break times{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .time-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+            margin-bottom: 2rem;
+        }
+        
+        .time-display {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .status-display {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .punch-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .punch-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .punch-button.btn-success {
+            background: rgba(16, 185, 129, 0.8);
+            border-color: rgba(16, 185, 129, 0.9);
+        }
+        
+        .punch-button.btn-warning {
+            background: rgba(245, 158, 11, 0.8);
+            border-color: rgba(245, 158, 11, 0.9);
+        }
+        
+        .punch-button.btn-danger {
+            background: rgba(239, 68, 68, 0.8);
+            border-color: rgba(239, 68, 68, 0.9);
+        }
+        
+        .today-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .time-entry {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-punched-in { background-color: #10b981; }
+        .status-punched-out { background-color: #ef4444; }
+        .status-on-break { background-color: #f59e0b; }
+        .status-not-punched-in { background-color: #6b7280; }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<!-- Lunch Break Alert -->
+{% if is_lunch_time and employee.role != 'call_center' %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" data-aos="fade-down" style="border-radius: 15px; border-left: 5px solid #f59e0b;">
+            <h5 class="alert-heading">
+                <i class="fas fa-utensils me-2"></i>Lunch Break Time (1:00 PM - 2:00 PM)
+            </h5>
+            <p class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>Your work session is automatically paused during lunch break. 
+                This hour will not be counted in your worked hours. Enjoy your meal! 🍽️
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Time Tracking Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="time-card" data-aos="fade-up">
+            <div class="time-display" id="current-time"></div>
+            <div class="status-display">
+                <span class="status-indicator status-{{ current_status|lower }}"></span>
+                {{ current_status }}
+            </div>
+            
+            <div class="punch-actions">
+                {% if current_status == "Not Punched In" %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="entry_type" value="punch_in">
+                        <button type="submit" class="punch-button btn-success">
+                            <i class="fas fa-play me-2"></i>Start Work Day
+                        </button>
+                    </form>
+                {% elif current_status == "Working" %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="entry_type" value="break_start">
+                        <button type="submit" class="punch-button btn-warning">
+                            <i class="fas fa-pause me-2"></i>Take Break
+                        </button>
+                    </form>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="entry_type" value="punch_out">
+                        <button type="submit" class="punch-button btn-danger">
+                            <i class="fas fa-stop me-2"></i>End Work Day
+                        </button>
+                    </form>
+                {% elif current_status == "On Break" %}
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="entry_type" value="break_end">
+                        <button type="submit" class="punch-button btn-success">
+                            <i class="fas fa-play me-2"></i>Resume Work
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Summary -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="today-summary" data-aos="fade-up" data-aos-delay="100">
+            <h5 class="mb-3">
+                <i class="fas fa-calendar-day me-2 text-primary"></i>Today's Summary
+            </h5>
+            <div class="row text-center">
+                <div class="col-4">
+                    <h3 class="text-primary">{{ today_hours|floatformat:1 }}</h3>
+                    <small class="text-muted">Hours Worked</small>
+                </div>
+                <div class="col-4">
+                    <h3 class="text-success">{{ break_hours|floatformat:1|default:"0.0" }}</h3>
+                    <small class="text-muted">Break Hours</small>
+                </div>
+                <div class="col-4">
+                    <h3 class="text-info">{{ total_entries|default:"0" }}</h3>
+                    <small class="text-muted">Time Entries</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="today-summary" data-aos="fade-up" data-aos-delay="200">
+            <h5 class="mb-3">
+                <i class="fas fa-clock me-2 text-primary"></i>Recent Entries
+            </h5>
+            {% if today_entries %}
+                {% for entry in today_entries|slice:":5" %}
+                    <div class="time-entry">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ entry.get_entry_type_display }}</strong>
+                                <br>
+                                <small class="text-muted">{{ entry.timestamp|time:"g:i A" }}</small>
+                            </div>
+                            <div class="text-end">
+                                {% if entry.location %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Location logged
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center py-3">No time entries today</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="today-summary" data-aos="fade-up" data-aos-delay="300">
+            <h5 class="mb-3">
+                <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{% url 'crm:employee_dashboard' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'crm:employee_timesheet' %}" class="btn btn-outline-info w-100">
+                        <i class="fas fa-calendar-alt me-2"></i>View Timesheet
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'crm:employee_tasks' %}" class="btn btn-outline-success w-100">
+                        <i class="fas fa-tasks me-2"></i>My Tasks
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'crm:add_communication' %}" class="btn btn-outline-warning w-100">
+                        <i class="fas fa-phone me-2"></i>Log Call
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block employee_js %}
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // Update time every second
+        setInterval(updateTime, 1000);
+        updateTime(); // Initial call
+        
+        // Get user location for punch in/out
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    // Add location to forms
+                    const forms = document.querySelectorAll('form');
+                    forms.forEach(form => {
+                        if (!form.querySelector('input[name="location"]')) {
+                            const locationInput = document.createElement('input');
+                            locationInput.type = 'hidden';
+                            locationInput.name = 'location';
+                            locationInput.value = position.coords.latitude + ',' + position.coords.longitude;
+                            form.appendChild(locationInput);
+                        }
+                    });
+                });
+            }
+        }
+        
+        // Get location on page load
+        getLocation();
+    </script>
+{% endblock %}

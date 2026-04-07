@@ -1,0 +1,341 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Bulk User QR Codes - Admin Dashboard{% endblock %}
+{% block page_title %}Bulk QR Code Generation{% endblock %}
+{% block page_subtitle %}Generate QR codes for multiple users{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_dashboard:user_list' %}">Users</a></li>
+<li class="breadcrumb-item active">Bulk QR Codes</li>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-qrcode me-2"></i>Select Users for QR Code Generation
+    </div>
+    <div class="card-body">
+        <form method="post" id="bulk-qr-form">
+            {% csrf_token %}
+            
+            <!-- Search and Filter -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="user-search" placeholder="Search users...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="department-filter">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.name }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="selectAll()">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
+                            <i class="fas fa-square me-1"></i>Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Selection -->
+            <div class="row" id="user-grid">
+                {% for user in users %}
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-3 user-item" 
+                     data-name="{{ user.get_full_name|default:user.username|lower }}"
+                     data-username="{{ user.username|lower }}"
+                     data-department="{% if user.profile.department %}{{ user.profile.department.name|lower }}{% endif %}">
+                    <div class="card h-100 user-select-card">
+                        <div class="card-body text-center">
+                            <!-- Checkbox -->
+                            <div class="form-check position-absolute top-0 start-0 m-2">
+                                <input class="form-check-input user-checkbox" type="checkbox" 
+                                       name="selected_users" value="{{ user.id }}" id="user-{{ user.id }}">
+                            </div>
+                            
+                            <!-- User Avatar -->
+                            <div class="mb-3">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="Avatar" 
+                                         class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                         style="width: 60px; height: 60px;">
+                                        <span class="text-white fw-bold">
+                                            {{ user.first_name|first|default:user.username|first|upper }}
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- User Info -->
+                            <h6 class="card-title mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                            <p class="text-muted small mb-2">@{{ user.username }}</p>
+                            
+                            <!-- Status and Role -->
+                            <div class="mb-2">
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if user.is_superuser %}
+                                    <span class="badge bg-danger ms-1">Admin</span>
+                                {% elif user.is_staff %}
+                                    <span class="badge bg-primary ms-1">Staff</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Additional Info -->
+                            <div class="small text-muted">
+                                {% if user.profile.employee_id %}
+                                    <div>ID: {{ user.profile.employee_id }}</div>
+                                {% endif %}
+                                {% if user.profile.department %}
+                                    <div>{{ user.profile.department.name }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- No Results Message -->
+            <div id="no-results" class="text-center py-5 d-none">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h5>No Users Found</h5>
+                <p class="text-muted">Try adjusting your search criteria.</p>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top">
+                <div>
+                    <span class="text-muted">Selected: </span>
+                    <span class="fw-bold" id="selected-count">0</span>
+                    <span class="text-muted"> users</span>
+                </div>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'admin_dashboard:user_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Users
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="generate-btn" disabled>
+                        <i class="fas fa-download me-2"></i>Generate QR Codes
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qr-preview"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadSingleQR()">
+                    <i class="fas fa-download me-2"></i>Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-select-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.user-select-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.user-select-card.selected {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.user-checkbox {
+    transform: scale(1.2);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+#user-grid {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.user-item {
+    transition: all 0.3s ease;
+}
+
+.user-item.hidden {
+    display: none !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedUsers = [];
+let currentPreviewUser = null;
+
+// Search functionality
+document.getElementById('user-search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    filterUsers();
+});
+
+document.getElementById('department-filter').addEventListener('change', function() {
+    filterUsers();
+});
+
+function filterUsers() {
+    const searchTerm = document.getElementById('user-search').value.toLowerCase();
+    const departmentFilter = document.getElementById('department-filter').value.toLowerCase();
+    const userItems = document.querySelectorAll('.user-item');
+    let visibleCount = 0;
+    
+    userItems.forEach(item => {
+        const name = item.dataset.name;
+        const username = item.dataset.username;
+        const department = item.dataset.department;
+        
+        const matchesSearch = !searchTerm || name.includes(searchTerm) || username.includes(searchTerm);
+        const matchesDepartment = !departmentFilter || department.includes(departmentFilter);
+        
+        if (matchesSearch && matchesDepartment) {
+            item.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+    
+    // Show/hide no results message
+    const noResults = document.getElementById('no-results');
+    if (visibleCount === 0) {
+        noResults.classList.remove('d-none');
+    } else {
+        noResults.classList.add('d-none');
+    }
+}
+
+// Selection functionality
+function selectAll() {
+    const visibleCheckboxes = document.querySelectorAll('.user-item:not(.hidden) .user-checkbox');
+    visibleCheckboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        checkbox.closest('.user-select-card').classList.add('selected');
+    });
+    updateSelectedCount();
+}
+
+function clearAll() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.closest('.user-select-card').classList.remove('selected');
+    });
+    updateSelectedCount();
+}
+
+// Handle checkbox changes
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('user-checkbox')) {
+        const card = e.target.closest('.user-select-card');
+        if (e.target.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+        updateSelectedCount();
+    }
+});
+
+// Handle card clicks
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.user-select-card') && !e.target.classList.contains('user-checkbox')) {
+        const card = e.target.closest('.user-select-card');
+        const checkbox = card.querySelector('.user-checkbox');
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+    }
+});
+
+function updateSelectedCount() {
+    const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+    const count = selectedCheckboxes.length;
+    
+    document.getElementById('selected-count').textContent = count;
+    document.getElementById('generate-btn').disabled = count === 0;
+    
+    selectedUsers = Array.from(selectedCheckboxes).map(cb => cb.value);
+}
+
+// Form submission
+document.getElementById('bulk-qr-form').addEventListener('submit', function(e) {
+    if (selectedUsers.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one user.');
+        return;
+    }
+    
+    // Show loading state
+    const btn = document.getElementById('generate-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    btn.disabled = true;
+    
+    // The form will submit normally and trigger download
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }, 3000);
+});
+
+// Preview functionality (for future enhancement)
+function previewQR(userId) {
+    currentPreviewUser = userId;
+    // This would show a preview of the QR code
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+
+function downloadSingleQR() {
+    if (currentPreviewUser) {
+        window.open(`/admin-dashboard/users/${currentPreviewUser}/qr-code/`, '_blank');
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectedCount();
+});
+</script>
+{% endblock %}

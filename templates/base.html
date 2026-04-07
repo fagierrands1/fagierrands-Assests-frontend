@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Professional Business Management System{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Google Fonts - Professional Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Professional Corporate Theme CSS -->
+    {% load static %}
+    <link href="{% static 'css/unified-theme.css' %}" rel="stylesheet">
+    
+    <style>
+        /* PROFESSIONAL SIDEBAR SYSTEM */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--gradient-primary);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: var(--shadow-2xl);
+            backdrop-filter: blur(20px);
+            padding-top: var(--header-height);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="sidebar-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23sidebar-grid)"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: var(--border-radius);
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: var(--border-radius);
+            transition: var(--transition-normal);
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .sidebar .nav-section {
+            margin-bottom: var(--space-8);
+            padding: 0 var(--space-4);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .sidebar .nav-section-title {
+            padding: var(--space-2) var(--space-3) var(--space-4);
+            font-size: 0.75rem;
+            font-weight: var(--font-weight-bold);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.6);
+            position: relative;
+        }
+        
+        .sidebar .nav-section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: var(--space-3);
+            right: var(--space-3);
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+        
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            padding: var(--space-4) var(--space-4);
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            border-radius: var(--border-radius-lg);
+            transition: var(--transition-normal);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--space-2);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.875rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .sidebar .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: var(--transition-slow);
+        }
+        
+        .sidebar .nav-link:hover::before {
+            left: 100%;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: rgba(255,255,255,0.12);
+            color: var(--white);
+            transform: translateX(8px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: var(--white);
+            box-shadow: var(--shadow-xl);
+            border-left: 4px solid var(--white);
+            transform: translateX(4px);
+        }
+        
+        .sidebar .nav-link.active::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: var(--space-4);
+            width: 6px;
+            height: 6px;
+            background: var(--white);
+            border-radius: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        
+        .sidebar .nav-link i {
+            width: 24px;
+            margin-right: var(--space-4);
+            text-align: center;
+            font-size: 1.1rem;
+            transition: var(--transition-normal);
+        }
+        
+        .sidebar .nav-link:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* PROFESSIONAL HEADER */
+        .navbar {
+            background: var(--gradient-primary) !important;
+            height: var(--header-height);
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .navbar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="header-grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23header-grid)"/></svg>');
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .navbar-brand {
+            font-weight: var(--font-weight-bold) !important;
+            font-size: 1.5rem !important;
+            color: var(--white) !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .navbar-brand i {
+            background: rgba(255, 255, 255, 0.1);
+            padding: var(--space-2);
+            border-radius: var(--border-radius);
+            margin-right: var(--space-3);
+        }
+        
+        /* MAIN CONTENT LAYOUT */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            padding-top: var(--header-height);
+            background: var(--gradient-page);
+            position: relative;
+        }
+        
+        .main-content::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="main-grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(26,54,93,0.02)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23main-grid)"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* RESPONSIVE DESIGN */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: var(--transition-normal);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .main-content::before {
+                left: 0;
+            }
+        }
+        
+        /* PROFESSIONAL USER DROPDOWN */
+        .nav-link.dropdown-toggle {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-radius: var(--border-radius-lg) !important;
+            padding: var(--space-3) var(--space-4) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition-normal);
+        }
+        
+        .nav-link.dropdown-toggle:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .user-avatar {
+            opacity: 0.9;
+            transition: var(--transition-normal);
+        }
+        
+        .nav-link.dropdown-toggle:hover .user-avatar {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .user-name {
+            font-weight: var(--font-weight-semibold);
+            font-size: 0.875rem;
+            color: var(--white);
+            line-height: 1.2;
+        }
+        
+        .user-email {
+            opacity: 0.8;
+            font-size: 0.75rem;
+            color: var(--white);
+            line-height: 1.2;
+        }
+        
+        .dropdown-item.text-danger {
+            color: #ff6b6b !important;
+        }
+        
+        .dropdown-item.text-danger:hover {
+            background: rgba(255, 107, 107, 0.1) !important;
+            color: #ff5252 !important;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Professional Corporate Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid px-4">
+            {% if user.is_authenticated %}
+                {% load crm_tags %}
+                {% with user|safe_employee_profile as employee_profile %}
+                    {% if employee_profile and not user.is_staff and not user.is_superuser %}
+                        <a class="navbar-brand d-flex align-items-center" href="{% url 'crm:employee_dashboard' %}">
+                            <i class="fas fa-user-tie"></i>Professional Employee Portal
+                        </a>
+                    {% else %}
+                        <a class="navbar-brand d-flex align-items-center" href="{% url 'root_redirect' %}">
+                            <i class="fas fa-building"></i>Corporate Business Management
+                        </a>
+                    {% endif %}
+                {% endwith %}
+            {% else %}
+                <a class="navbar-brand d-flex align-items-center" href="{% url 'root_redirect' %}">
+                    <i class="fas fa-building"></i>Corporate Business Management
+                </a>
+            {% endif %}
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" id="sidebarToggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        <i class="fas fa-user-circle fa-2x"></i>
+                                    </div>
+                                    <div class="user-info text-start">
+                                        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                                        <small class="user-email">{{ user.email }}</small>
+                                    </div>
+                                    <i class="fas fa-chevron-down ms-3"></i>
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">
+                                    <i class="fas fa-network-wired me-2"></i>System Access
+                                </h6></li>
+                                <li><span class="dropdown-item-text">
+                                    <small class="text-muted"><i class="fas fa-globe me-2"></i>{{ request.get_host }}</small>
+                                </span></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% with user|safe_employee_profile as employee_profile %}
+                                    {% if not employee_profile or user.is_staff or user.is_superuser %}
+                                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="fas fa-cogs me-2"></i>System Admin</a></li>
+                                    {% endif %}
+                                {% endwith %}
+                                <li><a class="dropdown-item" href="/assets/bulk-print-labels/" target="_blank"><i class="fas fa-qrcode me-2"></i>QR Label Printer</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-outline-light" href="{% url 'login' %}">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="nav-section">
+            <div class="nav-section-title">Dashboard</div>
+            {% if user.is_authenticated %}
+                {% with user|safe_employee_profile as employee_profile %}
+                    {% if employee_profile and not user.is_staff and not user.is_superuser %}
+                        <a class="nav-link {% if 'employee_dashboard' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:employee_dashboard' %}">
+                            <i class="fas fa-user-tie"></i>My Dashboard
+                        </a>
+                    {% else %}
+                        <a class="nav-link {% if request.resolver_match.url_name == 'root_redirect' %}active{% endif %}" href="{% url 'root_redirect' %}">
+                            <i class="fas fa-tachometer-alt"></i>Main Dashboard
+                        </a>
+                    {% endif %}
+                {% endwith %}
+            {% else %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'root_redirect' %}active{% endif %}" href="{% url 'root_redirect' %}">
+                    <i class="fas fa-tachometer-alt"></i>Main Dashboard
+                </a>
+            {% endif %}
+        </div>
+        
+        {% with user|safe_employee_profile as employee_profile %}
+            {% if not employee_profile or user.is_staff or user.is_superuser %}
+            <div class="nav-section">
+                <div class="nav-section-title">Asset Management</div>
+                <a class="nav-link {% if request.resolver_match.url_name == 'asset_list' %}active{% endif %}" href="{% url 'asset_list' %}">
+                    <i class="fas fa-laptop"></i>Assets
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'user_assignments' %}active{% endif %}" href="{% url 'user_assignments' %}">
+                    <i class="fas fa-users"></i>User Assignments
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'location_view' %}active{% endif %}" href="{% url 'location_view' %}">
+                    <i class="fas fa-map-marker-alt"></i>Locations
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'department_view' %}active{% endif %}" href="{% url 'department_view' %}">
+                    <i class="fas fa-building"></i>Departments
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'discovery_dashboard' %}active{% endif %}" href="{% url 'discovery_dashboard' %}">
+                    <i class="fas fa-search"></i>Discovery
+                </a>
+            </div>
+            {% else %}
+            <div class="nav-section">
+                <div class="nav-section-title">My Assets</div>
+                <a class="nav-link {% if request.resolver_match.url_name == 'asset_list' %}active{% endif %}" href="{% url 'asset_list' %}">
+                    <i class="fas fa-laptop"></i>View Assets
+                </a>
+            </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% with user|safe_employee_profile as employee_profile %}
+            {% if not employee_profile or user.is_staff or user.is_superuser %}
+            <div class="nav-section">
+                <div class="nav-section-title">Customer Management</div>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'crm:dashboard' %}">
+                    <i class="fas fa-handshake"></i>CRM Dashboard
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and 'customer' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:customer_list' %}">
+                    <i class="fas fa-users"></i>Customers
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and 'lead' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:lead_list' %}">
+                    <i class="fas fa-user-plus"></i>Leads
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and 'assignment' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:assignment_list' %}">
+                    <i class="fas fa-link"></i>Asset Assignments
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'crm:notifications' %}">
+                    <i class="fas fa-bell"></i>Notifications
+                </a>
+            </div>
+            {% else %}
+            <div class="nav-section">
+                <div class="nav-section-title">My Customers</div>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and 'customer' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:customer_list' %}">
+                    <i class="fas fa-users"></i>My Customers
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and 'lead' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'crm:lead_list' %}">
+                    <i class="fas fa-user-plus"></i>My Leads
+                </a>
+                <a class="nav-link {% if 'crm' in request.resolver_match.app_name and request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="{% url 'crm:notifications' %}">
+                    <i class="fas fa-bell"></i>Notifications
+                </a>
+            </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% with user|safe_employee_profile as employee_profile %}
+            {% if user.is_authenticated and employee_profile and not user.is_staff and not user.is_superuser %}
+            <div class="nav-section">
+                <div class="nav-section-title">My Workspace</div>
+                <a class="nav-link" href="{% url 'crm:employee_dashboard' %}">
+                    <i class="fas fa-user-tie"></i>Employee Dashboard
+                </a>
+                <a class="nav-link" href="{% url 'crm:employee_tasks' %}">
+                    <i class="fas fa-tasks"></i>My Tasks
+                </a>
+                <a class="nav-link" href="{% url 'crm:employee_timesheet' %}">
+                    <i class="fas fa-calendar-alt"></i>My Timesheet
+                </a>
+                <a class="nav-link" href="{% url 'crm:employee_kpis' %}">
+                    <i class="fas fa-chart-line"></i>My Performance
+                </a>
+            </div>
+            {% endif %}
+            
+            {% if not employee_profile or user.is_staff or user.is_superuser %}
+            <div class="nav-section">
+                <div class="nav-section-title">Administration</div>
+                <a class="nav-link" href="{% url 'admin_dashboard:dashboard' %}">
+                    <i class="fas fa-cogs"></i>Admin Dashboard
+                </a>
+                <a class="nav-link" href="{% url 'admin:index' %}">
+                    <i class="fas fa-cog"></i>Django Admin
+                </a>
+            </div>
+            {% endif %}
+        {% endwith %}
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        <div class="container-fluid p-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none; box-shadow: var(--card-shadow);">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        // Sidebar toggle for mobile
+        document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        });
+        
+        // Auto-dismiss alerts
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+        
+        // Enhanced DataTables initialization
+        $(document).ready(function() {
+            $('.table').each(function() {
+                if ($(this).hasClass('no-datatable')) {
+                    return;
+                }
+                $(this).DataTable({
+                    responsive: true,
+                    pageLength: 25,
+                    language: {
+                        search: "Search:",
+                        lengthMenu: "Show _MENU_ entries",
+                        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                        paginate: {
+                            first: "First",
+                            last: "Last",
+                            next: "Next",
+                            previous: "Previous"
+                        }
+                    },
+                    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                         '<"row"<"col-sm-12"tr>>' +
+                         '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                });
+            });
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add loading states to buttons
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                if (form.classList.contains('no-submit-loading')) {
+                    return;
+                }
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+                    submitBtn.disabled = true;
+                }
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

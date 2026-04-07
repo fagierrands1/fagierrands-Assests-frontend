@@ -1,0 +1,445 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage system users and permissions{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Users</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0 fw-bold">All Users</h5>
+        <small class="text-muted">{{ page_obj.paginator.count|default:0 }} total user{{ page_obj.paginator.count|pluralize }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="exportUsers()">
+            <i class="fas fa-download me-2"></i>Export
+        </button>
+        <a href="{% url 'admin_dashboard:bulk_user_qr_codes' %}" class="btn btn-outline-info">
+            <i class="fas fa-qrcode me-2"></i>Generate QR Codes
+        </a>
+        <a href="{% url 'admin_dashboard:user_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Add New User
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>Search & Filter
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search Users</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Username, name, email, employee ID...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Users</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="role" class="form-label">Role</label>
+                <select class="form-select" id="role" name="role">
+                    <option value="">All Roles</option>
+                    <option value="employee" {% if role == 'employee' %}selected{% endif %}>Employee</option>
+                    <option value="manager" {% if role == 'manager' %}selected{% endif %}>Manager</option>
+                    <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="department" class="form-label">Department</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if department == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <div class="btn-group w-100" role="group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <a href="{% url 'admin_dashboard:user_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Grid/Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-users me-2"></i>Users
+        </div>
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="view-mode" id="grid-view" checked>
+            <label class="btn btn-outline-primary" for="grid-view"><i class="fas fa-th"></i></label>
+            
+            <input type="radio" class="btn-check" name="view-mode" id="table-view">
+            <label class="btn btn-outline-primary" for="table-view"><i class="fas fa-list"></i></label>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <!-- Grid View -->
+            <div id="grid-container" class="row g-4">
+                {% for user in page_obj %}
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    <div class="card h-100 user-card">
+                        <div class="card-body text-center">
+                            <!-- User Avatar -->
+                            <div class="mb-3">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="Avatar" 
+                                         class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                         style="width: 80px; height: 80px;">
+                                        <span class="text-white fw-bold fs-2">
+                                            {{ user.first_name|first|default:user.username|first|upper }}
+                                        </span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- User Info -->
+                            <h6 class="card-title mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                            <p class="text-muted small mb-2">@{{ user.username }}</p>
+                            
+                            <!-- Status Badges -->
+                            <div class="mb-3">
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if user.employee_profile.role %}
+                                    {% if user.employee_profile.role == 'admin' %}
+                                        <span class="badge bg-danger ms-1">Admin</span>
+                                    {% elif user.employee_profile.role == 'manager' %}
+                                        <span class="badge bg-warning ms-1">Manager</span>
+                                    {% elif user.employee_profile.role == 'employee' %}
+                                        <span class="badge bg-primary ms-1">Employee</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary ms-1">{{ user.employee_profile.role|title }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary ms-1">No Role</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- User Details -->
+                            <div class="text-start small mb-3">
+                                {% if user.email %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-envelope text-muted me-2"></i>{{ user.email|truncatechars:25 }}
+                                    </div>
+                                {% endif %}
+                                {% if user.profile.employee_id %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-id-badge text-muted me-2"></i>{{ user.profile.employee_id }}
+                                    </div>
+                                {% endif %}
+                                {% if user.profile.department %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-building text-muted me-2"></i>{{ user.profile.department.name }}
+                                    </div>
+                                {% endif %}
+                                {% if user.profile.job_title %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-briefcase text-muted me-2"></i>{{ user.profile.job_title|truncatechars:20 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'admin_dashboard:user_detail' user.id %}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'admin_dashboard:user_edit' user.id %}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'admin_dashboard:user_qr_code' user.id %}" 
+                                   class="btn btn-outline-info btn-sm" target="_blank" title="Generate QR Code">
+                                    <i class="fas fa-qrcode"></i>
+                                </a>
+                                <a href="{% url 'admin_dashboard:user_delete' user.id %}" 
+                                   class="btn btn-outline-danger btn-sm delete-confirm">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Table View (Hidden by default) -->
+            <div id="table-container" class="d-none">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Contact</th>
+                                <th>Department</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user.profile.avatar %}
+                                            <img src="{{ user.profile.avatar.url }}" alt="Avatar" 
+                                                 class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 40px; height: 40px;">
+                                                <span class="text-white fw-bold">
+                                                    {{ user.first_name|first|default:user.username|first|upper }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                                            <small class="text-muted">@{{ user.username }}</small>
+                                            {% if user.profile.employee_id %}
+                                                <small class="text-muted d-block">ID: {{ user.profile.employee_id }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if user.email %}
+                                            <div class="small"><i class="fas fa-envelope me-1"></i>{{ user.email }}</div>
+                                        {% endif %}
+                                        {% if user.profile.phone %}
+                                            <div class="small"><i class="fas fa-phone me-1"></i>{{ user.profile.phone }}</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if user.profile.department %}
+                                        <span class="badge bg-info">{{ user.profile.department.name }}</span>
+                                        {% if user.profile.job_title %}
+                                            <div class="small text-muted">{{ user.profile.job_title }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.employee_profile.role %}
+                                        {% if user.employee_profile.role == 'admin' %}
+                                            <span class="badge bg-danger">Admin</span>
+                                        {% elif user.employee_profile.role == 'manager' %}
+                                            <span class="badge bg-warning">Manager</span>
+                                        {% elif user.employee_profile.role == 'employee' %}
+                                            <span class="badge bg-primary">Employee</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ user.employee_profile.role|title }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">No Role</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.last_login %}
+                                        <div class="small">{{ user.last_login|date:"M d, Y" }}</div>
+                                        <div class="small text-muted">{{ user.last_login|timesince }} ago</div>
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'admin_dashboard:user_detail' user.id %}" 
+                                           class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'admin_dashboard:user_edit' user.id %}" 
+                                           class="btn btn-outline-warning btn-sm" title="Edit User">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'admin_dashboard:user_qr_code' user.id %}" 
+                                           class="btn btn-outline-info btn-sm" target="_blank" title="Generate QR Code">
+                                            <i class="fas fa-qrcode"></i>
+                                        </a>
+                                        <a href="{% url 'admin_dashboard:user_delete' user.id %}" 
+                                           class="btn btn-outline-danger btn-sm delete-confirm" title="Delete User">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="User pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if department %}&department={{ department }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if department %}&department={{ department }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if department %}&department={{ department }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if role %}&role={{ role }}{% endif %}{% if department %}&department={{ department }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                <h5>No Users Found</h5>
+                <p class="text-muted">No users match your search criteria.</p>
+                <a href="{% url 'admin_dashboard:user_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add First User
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+
+.user-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// View mode toggle
+document.getElementById('grid-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').classList.remove('d-none');
+        document.getElementById('table-container').classList.add('d-none');
+    }
+});
+
+document.getElementById('table-view').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('grid-container').classList.add('d-none');
+        document.getElementById('table-container').classList.remove('d-none');
+    }
+});
+
+// Export function
+function exportUsers() {
+    // Create CSV export
+    const table = document.querySelector('#table-container table');
+    if (!table) {
+        alert('Please switch to table view first');
+        return;
+    }
+    
+    let csv = [];
+    const headers = Array.from(table.querySelectorAll('thead th')).slice(0, -1).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).slice(0, -1).map(td => {
+            return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+        });
+        csv.push(cells.join(','));
+    });
+    
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'users_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

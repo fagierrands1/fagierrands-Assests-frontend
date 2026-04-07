@@ -1,0 +1,183 @@
+================================================================================
+                    FagiCRM - cPanel Deployment Checklist
+                         Domain: fagicrm.fagitone.com
+================================================================================
+
+PRE-DEPLOYMENT CHECKLIST:
+-------------------------
+[ ] cPanel account credentials ready
+[ ] Domain fagicrm.fagitone.com configured in cPanel
+[ ] SSH access available (or File Manager access)
+[ ] Python 3.8+ available in cPanel
+[ ] MySQL database access available
+
+STEP 1: DATABASE SETUP
+----------------------
+[ ] Login to cPanel
+[ ] Go to MySQL Databases
+[ ] Create database: fagicrm
+[ ] Create user: fagicrm_user
+[ ] Set strong password for user
+[ ] Add user to database with ALL PRIVILEGES
+[ ] Note down full database name (with username prefix)
+[ ] Note down full user name (with username prefix)
+[ ] Note down password
+
+STEP 2: PYTHON APP SETUP
+------------------------
+[ ] Go to cPanel → Setup Python App
+[ ] Click "Create Application"
+[ ] Select Python version 3.9 or higher
+[ ] Set Application Root: /home/yourusername/fagicrm.fagitone.com
+[ ] Set Application URL: / (or blank)
+[ ] Set Startup File: passenger_wsgi.py
+[ ] Set Entry Point: application
+[ ] Click Create
+[ ] Note down virtual environment path
+
+STEP 3: FILE UPLOAD
+-------------------
+[ ] Extract fagicrm_deployment.zip
+[ ] Upload all files to /home/yourusername/fagicrm.fagitone.com
+[ ] Verify all folders uploaded: customers, dashboard, employees, services, tracking, templates, static, fagicrm
+[ ] Verify all config files uploaded: .htaccess, passenger_wsgi.py, requirements.txt, manage.py
+
+STEP 4: CONFIGURATION
+--------------------
+[ ] Rename .env.production to .env
+[ ] Edit .env file:
+    [ ] Set SECRET_KEY (generate new random key)
+    [ ] Set DEBUG=False
+    [ ] Set ALLOWED_HOSTS=fagicrm.fagitone.com,www.fagicrm.fagitone.com
+    [ ] Set DB_NAME (with username prefix)
+    [ ] Set DB_USER (with username prefix)
+    [ ] Set DB_PASSWORD
+    [ ] Set DB_HOST=localhost
+    [ ] Set DB_PORT=3306
+    [ ] Set DJANGO_SETTINGS_MODULE=fagicrm.settings_production
+[ ] Edit .htaccess:
+    [ ] Replace yourusername with actual cPanel username
+[ ] Save all changes
+
+STEP 5: DEPLOYMENT
+-----------------
+[ ] SSH into server OR use Terminal in cPanel
+[ ] Navigate to application directory: cd ~/fagicrm.fagitone.com
+[ ] Make deploy script executable: chmod +x cpanel_deploy.sh
+[ ] Run deployment: ./cpanel_deploy.sh
+[ ] Check for any errors in output
+[ ] If errors, check django_errors.log
+
+STEP 6: CREATE ADMIN USER
+-------------------------
+[ ] SSH into server
+[ ] Navigate to app directory: cd ~/fagicrm.fagitone.com
+[ ] Activate virtual environment: source ~/virtualenv/fagicrm.fagitone.com/3.9/bin/activate
+[ ] Create superuser: python manage.py createsuperuser
+[ ] Enter username, email, and password
+[ ] Confirm user created successfully
+
+STEP 7: RESTART APPLICATION
+---------------------------
+[ ] Go to cPanel → Setup Python App
+[ ] Find fagicrm.fagitone.com application
+[ ] Click Restart button (circular arrow)
+[ ] Wait 10-30 seconds for restart
+
+STEP 8: TESTING
+--------------
+[ ] Visit https://fagicrm.fagitone.com
+[ ] Check homepage loads without errors
+[ ] Check static files loading (CSS, JavaScript)
+[ ] Visit https://fagicrm.fagitone.com/admin/
+[ ] Login with superuser credentials
+[ ] Check admin panel works
+[ ] Visit https://fagicrm.fagitone.com/dashboard/
+[ ] Check dashboard loads
+[ ] Test creating a customer
+[ ] Test creating an employee
+[ ] Test creating a service
+[ ] Check all navigation links work
+
+STEP 9: SECURITY
+---------------
+[ ] Verify DEBUG=False in .env
+[ ] Verify SECRET_KEY is unique and random
+[ ] Verify .env file is not publicly accessible
+[ ] Check SSL certificate is active (HTTPS)
+[ ] Test HTTPS redirect works
+[ ] Verify database password is strong
+[ ] Check file permissions (755 for dirs, 644 for files)
+[ ] Verify media folder has write permissions (777)
+
+STEP 10: MONITORING
+------------------
+[ ] Check django_errors.log for any errors
+[ ] Check ~/logs/error_log for Apache errors
+[ ] Test all major features work
+[ ] Monitor application performance
+[ ] Set up database backup schedule
+[ ] Document admin credentials securely
+
+POST-DEPLOYMENT CHECKLIST:
+--------------------------
+[ ] Application accessible at https://fagicrm.fagitone.com
+[ ] Admin panel accessible at https://fagicrm.fagitone.com/admin/
+[ ] Dashboard accessible at https://fagicrm.fagitone.com/dashboard/
+[ ] Static files loading correctly
+[ ] Database connections working
+[ ] All features functional
+[ ] No errors in logs
+[ ] SSL certificate active
+[ ] Backup strategy in place
+
+TROUBLESHOOTING REFERENCE:
+-------------------------
+If 500 Error:
+  - Check django_errors.log
+  - Check ~/logs/error_log
+  - Verify database credentials
+  - Check ALLOWED_HOSTS setting
+  - Restart application
+
+If Static Files Not Loading:
+  - Run: python manage.py collectstatic --noinput
+  - Check staticfiles folder permissions
+  - Verify .htaccess configuration
+  - Restart application
+
+If Database Error:
+  - Verify database name includes username prefix
+  - Check user has ALL PRIVILEGES
+  - Test connection: python manage.py dbshell
+  - Check password has no extra spaces
+
+If Module Not Found:
+  - Activate virtual environment
+  - Run: pip install -r requirements.txt
+  - Restart application
+
+IMPORTANT COMMANDS:
+------------------
+Activate venv: source ~/virtualenv/fagicrm.fagitone.com/3.9/bin/activate
+Run migrations: python manage.py migrate
+Collect static: python manage.py collectstatic --noinput
+Create superuser: python manage.py createsuperuser
+Check errors: tail -f django_errors.log
+Database shell: python manage.py dbshell
+Django shell: python manage.py shell
+
+SUPPORT CONTACTS:
+----------------
+Hosting Provider: [Your cPanel hosting support]
+Domain Registrar: [Your domain registrar support]
+Developer: [Your contact information]
+
+================================================================================
+Deployment Date: _______________
+Deployed By: _______________
+Notes: 
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+================================================================================

@@ -1,0 +1,433 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}My Workspace{% endblock %}
+{% block page_header %}My Workspace{% endblock %}
+{% block page_subtitle %}Welcome {{ employee.full_name }} - {{ employee.position }}{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .punch-card {
+            background: var(--gradient-primary);
+            color: var(--white);
+            border-radius: var(--border-radius-xl);
+            padding: var(--space-8);
+            text-align: center;
+            box-shadow: var(--shadow-2xl);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .punch-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="punch-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23punch-grid)"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        .punch-card > * {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .punch-button {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            padding: var(--space-4) var(--space-8);
+            border-radius: var(--border-radius-xl);
+            font-weight: var(--font-weight-semibold);
+            transition: var(--transition-normal);
+            margin: var(--space-2);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .punch-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-4px) scale(1.02);
+            color: var(--white);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-punched-in { background-color: #10b981; }
+        .status-punched-out { background-color: #ef4444; }
+        .status-on-break { background-color: #f59e0b; }
+        .status-not-punched-in { background-color: #6b7280; }
+        
+        .stats-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            padding: var(--space-6);
+            box-shadow: var(--shadow-md);
+            transition: var(--transition-normal);
+            height: 100%;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: var(--transition-normal);
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-light);
+        }
+        
+        .stats-card:hover::before {
+            opacity: 1;
+        }
+        
+        .stats-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-4);
+            color: var(--primary);
+            transition: var(--transition-normal);
+        }
+        
+        .stats-card:hover .stats-icon {
+            transform: scale(1.1);
+        }
+        
+        .stats-content h3 {
+            font-size: 2.5rem;
+            font-weight: var(--font-weight-extrabold);
+            margin-bottom: var(--space-2);
+            color: var(--gray-900);
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stats-content p {
+            color: var(--gray-600);
+            font-weight: var(--font-weight-medium);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .task-item {
+            transition: var(--transition-normal);
+            border-radius: var(--border-radius) !important;
+        }
+        
+        .task-item:hover {
+            background: linear-gradient(135deg, rgba(26, 54, 93, 0.02) 0%, rgba(45, 90, 135, 0.02) 100%) !important;
+            transform: translateX(4px);
+        }
+        
+        .current-time {
+            font-size: 1.25rem;
+            font-weight: var(--font-weight-semibold);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<!-- Time Tracking Card - Primary Focus -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="punch-card" data-aos="fade-up">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h3 class="mb-2">
+                        <span class="status-indicator status-{{ current_status|lower }}"></span>
+                        {{ current_status }}
+                    </h3>
+                    <p class="mb-3 opacity-75">
+                        Today's Hours: <strong>{{ today_hours|floatformat:1 }} hours</strong>
+                    </p>
+                    <div class="current-time">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="current-time"></span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center">
+                    {% if current_status == "Not Punched In" %}
+                        <form method="post" action="{% url 'crm:punch_in_out' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_type" value="punch_in">
+                            <button type="submit" class="punch-button">
+                                <i class="fas fa-play me-2"></i>Start Work
+                            </button>
+                        </form>
+                    {% elif current_status == "Working" %}
+                        <form method="post" action="{% url 'crm:punch_in_out' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_type" value="break_start">
+                            <button type="submit" class="punch-button">
+                                <i class="fas fa-pause me-2"></i>Take Break
+                            </button>
+                        </form>
+                        <form method="post" action="{% url 'crm:punch_in_out' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_type" value="punch_out">
+                            <button type="submit" class="punch-button">
+                                <i class="fas fa-stop me-2"></i>End Work
+                            </button>
+                        </form>
+                    {% elif current_status == "On Break" %}
+                        <form method="post" action="{% url 'crm:punch_in_out' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_type" value="break_end">
+                            <button type="submit" class="punch-button">
+                                <i class="fas fa-play me-2"></i>Resume Work
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'crm:punch_in_out' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="entry_type" value="punch_in">
+                            <button type="submit" class="punch-button">
+                                <i class="fas fa-play me-2"></i>Start Work
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Overview - Employee Focused -->
+<div class="row mb-4">
+    <div class="col-md-4 col-sm-6 mb-3">
+        <div class="stats-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="stats-icon">
+                <i class="fas fa-tasks text-primary"></i>
+            </div>
+            <div class="stats-content">
+                <h3>{{ pending_tasks }}</h3>
+                <p>Tasks Due Today</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6 mb-3">
+        <div class="stats-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="stats-icon">
+                <i class="fas fa-phone text-success"></i>
+            </div>
+            <div class="stats-content">
+                <h3>{{ recent_communications|length }}</h3>
+                <p>Calls Today</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6 mb-3">
+        <div class="stats-card" data-aos="fade-up" data-aos-delay="300">
+            <div class="stats-icon">
+                <i class="fas fa-clock text-info"></i>
+            </div>
+            <div class="stats-content">
+                <h3>{{ today_hours|floatformat:1 }}h</h3>
+                <p>Hours Worked</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Work Today -->
+<div class="row">
+    <!-- Today's Tasks -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100" data-aos="fade-up" data-aos-delay="400">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-check me-2 text-primary"></i>My Tasks Today
+                </h5>
+                <a href="{% url 'crm:employee_tasks' %}" class="btn btn-sm btn-primary">View All Tasks</a>
+            </div>
+            <div class="card-body">
+                {% if recent_tasks %}
+                    {% for task in recent_tasks %}
+                        <div class="task-item mb-3 p-3 border rounded {% if task.priority == 'urgent' %}border-danger{% elif task.priority == 'high' %}border-warning{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ task.title }}</h6>
+                                    <p class="text-muted small mb-2">{{ task.description|truncatechars:80 }}</p>
+                                    <div class="d-flex align-items-center">
+                                        <small class="text-muted me-3">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Due: {{ task.due_date|date:"M d" }}
+                                        </small>
+                                        {% if task.customer %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            {{ task.customer.full_name }}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% elif task.priority == 'medium' %}info{% else %}secondary{% endif %} mb-2">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">{{ task.get_status_display }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h6 class="text-muted">No pending tasks</h6>
+                        <p class="text-muted">Great job! You're all caught up.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100" data-aos="fade-up" data-aos-delay="500">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    {% if employee.is_manager %}
+                    <!-- Manager Actions -->
+                    <a href="{% url 'crm:manager_task_list' %}" class="btn btn-danger">
+                        <i class="fas fa-user-tie me-2"></i>Manage Tasks
+                    </a>
+                    <a href="{% url 'crm:manager_create_task' %}" class="btn btn-dark">
+                        <i class="fas fa-plus-circle me-2"></i>Assign New Task
+                    </a>
+                    <hr class="my-2">
+                    {% endif %}
+                    
+                    <!-- Employee Actions -->
+                    <a href="{% url 'crm:add_communication' %}" class="btn btn-success">
+                        <i class="fas fa-phone me-2"></i>Log Customer Call
+                    </a>
+                    <a href="{% url 'crm:money_request' %}" class="btn btn-outline-success">
+                        <i class="fas fa-hand-holding-usd me-2"></i>Request Funds
+                    </a>
+                    <a href="{% url 'crm:log_missed_call' %}" class="btn btn-danger">
+                        <i class="fas fa-phone-slash me-2"></i>Log Missed Call
+                    </a>
+                    <a href="{% url 'crm:missed_calls_list' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-list me-2"></i>View Missed Calls
+                    </a>
+                    <a href="{% url 'crm:employee_tasks' %}" class="btn btn-primary">
+                        <i class="fas fa-tasks me-2"></i>View My Tasks
+                    </a>
+                    <a href="{% url 'crm:employee_timesheet' %}" class="btn btn-info">
+                        <i class="fas fa-calendar-alt me-2"></i>View Timesheet
+                    </a>
+                    <a href="{% url 'crm:employee_kpis' %}" class="btn btn-warning">
+                        <i class="fas fa-chart-line me-2"></i>My Performance
+                    </a>
+                </div>
+                
+                <!-- Recent Activity Summary -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="text-muted mb-3">Recent Activity</h6>
+                    {% if recent_communications %}
+                        {% for comm in recent_communications|slice:":3" %}
+                            <div class="mb-2">
+                                <small class="d-block">
+                                    <i class="fas fa-phone me-1"></i>
+                                    {{ comm.subject|truncatechars:30 }}
+                                </small>
+                                <small class="text-muted">{{ comm.created_at|timesince }} ago</small>
+                            </div>
+                        {% endfor %}
+                        <a href="{% url 'crm:employee_communications' %}" class="btn btn-sm btn-outline-secondary w-100 mt-2">
+                            View All Communications
+                        </a>
+                    {% else %}
+                        <p class="text-muted small">No recent communications</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Summary - Simplified -->
+{% if monthly_kpis %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card" data-aos="fade-up" data-aos-delay="600">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy me-2 text-success"></i>This Month's Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for kpi_type, kpi_data in monthly_kpis.items %}
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <h4 class="text-primary mb-1">{{ kpi_data.value }}</h4>
+                                <small class="text-muted d-block">{{ kpi_type|title }}</small>
+                                {% if kpi_data.target %}
+                                    <div class="progress mt-2" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ kpi_data.achievement }}%">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Goal: {{ kpi_data.target }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block employee_js %}
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+        
+        // Update time every second
+        setInterval(updateTime, 1000);
+        updateTime(); // Initial call
+    </script>
+{% endblock %}

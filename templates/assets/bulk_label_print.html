@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Asset Labels</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .asset-selection {
+            margin-bottom: 20px;
+        }
+        
+        .asset-checkbox {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .label-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        .asset-label {
+            width: 2.5in;
+            height: 2in;
+            border: 2px solid #000;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+        }
+        
+        .qr-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .qr-code {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+        }
+        
+        .asset-info {
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        .asset-tag {
+            font-weight: bold;
+            font-size: 14px;
+            color: #000;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+        
+        .asset-name {
+            font-size: 10px;
+            color: #333;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+        
+        .asset-details {
+            font-size: 8px;
+            color: #666;
+            line-height: 1.2;
+        }
+        
+        .company-footer {
+            font-size: 7px;
+            color: #999;
+            margin-top: 3px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            padding-top: 2px;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .label-grid {
+                padding: 0;
+                gap: 0;
+            }
+            
+            .asset-label {
+                border: 2px solid #000 !important;
+                background: white !important;
+            }
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            color: white;
+        }
+        
+        .btn-primary { background: #007bff; }
+        .btn-success { background: #28a745; }
+        .btn-secondary { background: #6c757d; }
+        
+        .btn:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel no-print">
+        <h3>Bulk Asset Label Printing</h3>
+        
+        <div class="asset-selection">
+            <h4>Select Assets to Print:</h4>
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                {% for asset in assets %}
+                <label class="asset-checkbox">
+                    <input type="checkbox" value="{{ asset.id }}" data-asset-tag="{{ asset.asset_tag }}" 
+                           data-asset-name="{{ asset.name }}" 
+                           data-asset-model="{{ asset.model.name }}" 
+                           data-asset-manufacturer="{{ asset.model.manufacturer.name }}"
+                           data-asset-location="{{ asset.location.name|default:'Not assigned' }}"
+                           data-asset-assigned="{{ asset.assigned_to.get_full_name|default:'Unassigned' }}"
+                           data-asset-url="{% url 'asset_public_view' asset.id %}">
+                    {{ asset.asset_tag }} - {{ asset.name }}
+                </label><br>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+            <button class="btn btn-secondary" onclick="selectNone()">Select None</button>
+            <button class="btn btn-primary" onclick="generateLabels()">Generate Labels</button>
+            <button class="btn btn-success" onclick="window.print()">Print Labels</button>
+        </div>
+        
+        <div>
+            <label for="format-select">Label Format:</label>
+            <select id="format-select">
+                <option value="standard">Standard (2.5" × 2")</option>
+                <option value="avery-5160">Avery 5160 (2.625" × 1")</option>
+                <option value="large-format">Large Format (3.5" × 2.5")</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="label-grid" id="label-container">
+        <!-- Labels will be generated here -->
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+        
+        function selectNone() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+        
+        function createLabel(assetData) {
+            const label = document.createElement('div');
+            label.className = 'asset-label';
+            
+            // QR Section
+            const qrSection = document.createElement('div');
+            qrSection.className = 'qr-section';
+            
+            const qrCode = document.createElement('div');
+            qrCode.className = 'qr-code';
+            
+            const canvas = document.createElement('canvas');
+            qrCode.appendChild(canvas);
+            
+            // Generate QR code (use public base if provided, else origin)
+            const publicBase = '{{ public_base|default:"" }}';
+            const assetUrl = (publicBase ? publicBase : window.location.origin) + assetData.url;
+            QRCode.toCanvas(canvas, assetUrl, {
+                width: 100,
+                height: 100,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            });
+            
+            qrSection.appendChild(qrCode);
+            
+            // Asset Info
+            const assetInfo = document.createElement('div');
+            assetInfo.className = 'asset-info';
+            assetInfo.innerHTML = `
+                <div class="asset-tag">${assetData.tag}</div>
+                <div class="asset-name">${assetData.name}</div>
+                <div class="asset-details">
+                    ${assetData.manufacturer} ${assetData.model}<br>
+                    ${assetData.location}<br>
+                    ${assetData.assigned}
+                </div>
+                <div class="company-footer">
+                    Property of Your Company Name
+                </div>
+            `;
+            
+            label.appendChild(qrSection);
+            label.appendChild(assetInfo);
+            
+            return label;
+        }
+        
+        function generateLabels() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            const container = document.getElementById('label-container');
+            const formatSelect = document.getElementById('format-select');
+            
+            // Update body class for format
+            document.body.className = formatSelect.value;
+            
+            // Clear container
+            container.innerHTML = '';
+            
+            if (checkboxes.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">No assets selected. Please select assets to print labels.</div>';
+                return;
+            }
+            
+            // Generate labels for selected assets
+            checkboxes.forEach(checkbox => {
+                const assetData = {
+                    tag: checkbox.dataset.assetTag,
+                    name: checkbox.dataset.assetName,
+                    model: checkbox.dataset.assetModel,
+                    manufacturer: checkbox.dataset.assetManufacturer,
+                    location: checkbox.dataset.assetLocation,
+                    assigned: checkbox.dataset.assetAssigned,
+                    url: checkbox.dataset.assetUrl
+                };
+                
+                const label = createLabel(assetData);
+                container.appendChild(label);
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select first few assets by default
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            for (let i = 0; i < Math.min(4, checkboxes.length); i++) {
+                checkboxes[i].checked = true;
+            }
+            generateLabels();
+        });
+        
+        // Update labels when format changes
+        document.getElementById('format-select').addEventListener('change', generateLabels);
+    </script>
+</body>
+</html>

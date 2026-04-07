@@ -1,0 +1,135 @@
+{% extends "crm_integration/base.html" %}
+
+{% block crm_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>CRM Customers</h1>
+    <button type="button" class="btn btn-sync" onclick="performSync('sync_customers', this)">
+        Sync from CRM
+    </button>
+</div>
+
+<!-- Search and Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Search by name, company, or email">
+            </div>
+            <div class="col-md-4">
+                <label for="sync_status" class="form-label">Sync Status</label>
+                <select class="form-select" id="sync_status" name="sync_status">
+                    <option value="">All Statuses</option>
+                    <option value="synced" {% if sync_status == 'synced' %}selected{% endif %}>Synced</option>
+                    <option value="pending" {% if sync_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="error" {% if sync_status == 'error' %}selected{% endif %}>Error</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Filter</button>
+                <a href="{% url 'crm_integration:customer_list' %}" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Customer List -->
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Company</th>
+                            <th>Contact</th>
+                            <th>Assigned Employee</th>
+                            <th>Sync Status</th>
+                            <th>Last Synced</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ customer.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">ID: {{ customer.crm_customer_id }}</small>
+                                </td>
+                                <td>{{ customer.company_name|default:"-" }}</td>
+                                <td>
+                                    <div>{{ customer.email }}</div>
+                                    <small class="text-muted">{{ customer.phone }}</small>
+                                </td>
+                                <td>
+                                    {% if customer.assigned_employee %}
+                                        {{ customer.assigned_employee.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">Unassigned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="sync-status {{ customer.sync_status }}">
+                                        {{ customer.get_sync_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if customer.last_synced %}
+                                        {{ customer.last_synced|timesince }} ago
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'crm_integration:customer_detail' customer.id %}" 
+                                       class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Customer pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if sync_status %}&sync_status={{ sync_status }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if sync_status %}&sync_status={{ sync_status }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if sync_status %}&sync_status={{ sync_status }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if sync_status %}&sync_status={{ sync_status }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <h5 class="text-muted">No customers found</h5>
+                <p class="text-muted">Try adjusting your search criteria or sync customers from CRM.</p>
+                <button type="button" class="btn btn-primary" onclick="performSync('sync_customers', this)">
+                    Sync Customers from CRM
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

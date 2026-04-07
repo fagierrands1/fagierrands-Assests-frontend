@@ -1,0 +1,120 @@
+<!-- Edit Maintenance Modal -->
+<div class="modal fade" id="editMaintenanceModal{{ maintenance.id }}" tabindex="-1" aria-labelledby="editMaintenanceModalLabel{{ maintenance.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editMaintenanceModalLabel{{ maintenance.id }}">Edit Maintenance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'maintenance_update' maintenance.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_maintenance_type_{{ maintenance.id }}" class="form-label">Maintenance Type *</label>
+                                <select class="form-select" id="edit_maintenance_type_{{ maintenance.id }}" name="maintenance_type" required>
+                                    <option value="preventive" {% if maintenance.maintenance_type == 'preventive' %}selected{% endif %}>Preventive</option>
+                                    <option value="corrective" {% if maintenance.maintenance_type == 'corrective' %}selected{% endif %}>Corrective</option>
+                                    <option value="emergency" {% if maintenance.maintenance_type == 'emergency' %}selected{% endif %}>Emergency</option>
+                                    <option value="upgrade" {% if maintenance.maintenance_type == 'upgrade' %}selected{% endif %}>Upgrade</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_scheduled_date_{{ maintenance.id }}" class="form-label">Scheduled Date *</label>
+                                <input type="datetime-local" class="form-control" id="edit_scheduled_date_{{ maintenance.id }}" name="scheduled_date" 
+                                       value="{{ maintenance.scheduled_date|date:'Y-m-d\TH:i' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_maintenance_title_{{ maintenance.id }}" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="edit_maintenance_title_{{ maintenance.id }}" name="title" 
+                               value="{{ maintenance.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_maintenance_description_{{ maintenance.id }}" class="form-label">Description *</label>
+                        <textarea class="form-control" id="edit_maintenance_description_{{ maintenance.id }}" name="description" rows="4" required>{{ maintenance.description }}</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_status_{{ maintenance.id }}" class="form-label">Status</label>
+                                <select class="form-select" id="edit_status_{{ maintenance.id }}" name="status">
+                                    <option value="scheduled" {% if maintenance.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                                    <option value="in_progress" {% if maintenance.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                    <option value="completed" {% if maintenance.status == 'completed' %}selected{% endif %}>Completed</option>
+                                    <option value="cancelled" {% if maintenance.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_performed_by_{{ maintenance.id }}" class="form-label">Assigned To</label>
+                                <select class="form-select" id="edit_performed_by_{{ maintenance.id }}" name="performed_by">
+                                    <option value="">Select technician...</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}" {% if maintenance.performed_by and maintenance.performed_by.id == user.id %}selected{% endif %}>
+                                        {{ user.get_full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="edit_cost_{{ maintenance.id }}" class="form-label">Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="edit_cost_{{ maintenance.id }}" name="cost" 
+                                           step="0.01" min="0" value="{{ maintenance.cost|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Completion Date (only show if status is completed) -->
+                    <div class="mb-3" id="completion_date_group_{{ maintenance.id }}" style="{% if maintenance.status != 'completed' %}display: none;{% endif %}">
+                        <label for="edit_completed_date_{{ maintenance.id }}" class="form-label">Completion Date</label>
+                        <input type="datetime-local" class="form-control" id="edit_completed_date_{{ maintenance.id }}" name="completed_date" 
+                               value="{% if maintenance.completed_date %}{{ maintenance.completed_date|date:'Y-m-d\TH:i' }}{% endif %}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_maintenance_notes_{{ maintenance.id }}" class="form-label">Notes</label>
+                        <textarea class="form-control" id="edit_maintenance_notes_{{ maintenance.id }}" name="notes" rows="3">{{ maintenance.notes }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Maintenance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide completion date based on status
+document.getElementById('edit_status_{{ maintenance.id }}').addEventListener('change', function() {
+    const completionGroup = document.getElementById('completion_date_group_{{ maintenance.id }}');
+    const completionInput = document.getElementById('edit_completed_date_{{ maintenance.id }}');
+    
+    if (this.value === 'completed') {
+        completionGroup.style.display = 'block';
+        if (!completionInput.value) {
+            // Set to current date/time if not already set
+            const now = new Date();
+            const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            completionInput.value = localDateTime;
+        }
+    } else {
+        completionGroup.style.display = 'none';
+        completionInput.value = '';
+    }
+});
+</script>

@@ -1,0 +1,238 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Edit Daily Report{% endblock %}
+{% block page_header %}Edit Daily Report{% endblock %}
+{% block page_subtitle %}Update your daily performance metrics{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <style>
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 0.5rem;
+            color: #6366f1;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+        }
+        
+        .stat-display {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+        
+        .stat-display .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+        
+        .stat-display .label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .info-box small {
+            color: #1e40af;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card" data-aos="fade-up">
+            <!-- Report Summary -->
+            <div class="mb-4 pb-4 border-bottom">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-2"><i class="fas fa-calendar me-2"></i>Report Information</h5>
+                        <p class="mb-1">
+                            <strong>Date:</strong> {{ report.week_start|date:"M d, Y" }}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Created:</strong> {{ report.created_at|date:"M d, Y g:i A" }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="mb-2"><i class="fas fa-chart-pie me-2"></i>Performance Summary</h5>
+                        <p class="mb-1">
+                            <strong>Target Achievement:</strong> 
+                            <span class="badge badge-success">{{ report.target_achievement }}%</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Success Rate:</strong> 
+                            {% if report.calls_made > 0 %}
+                                <span class="badge badge-success">{{ report.success_rate }}%</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No data</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <!-- Week Target Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-bullseye"></i>
+                        Daily Target
+                    </h4>
+                    
+                    <div class="stat-display">
+                        <div class="label">Target (Set by Admin)</div>
+                        <div class="value">{{ report.weekly_target }} calls</div>
+                    </div>
+                    <input type="hidden" name="weekly_target" value="{{ report.weekly_target }}">
+                </div>
+
+                <!-- Performance Metrics Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Performance Metrics
+                    </h4>
+                    
+                    <div class="metrics-grid">
+                        <div>
+                            <label for="calls_made" class="form-label">Calls Made</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="calls_made" id="calls_made" value="{{ report.calls_made }}" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                            </div>
+                            <div class="stat-display mt-2">
+                                <div class="label">vs Target</div>
+                                <div class="value" id="target-percentage">{{ report.target_achievement }}%</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="successful_calls" class="form-label">Successful Calls</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="successful_calls" id="successful_calls" value="{{ report.successful_calls }}" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-check-circle"></i></span>
+                            </div>
+                            <div class="stat-display mt-2">
+                                <div class="label">Success Rate</div>
+                                <div class="value" id="success-rate">{% if report.calls_made > 0 %}{{ report.success_rate }}{% else %}0{% endif %}%</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="errands_made" class="form-label">Errands Made</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="errands_made" id="errands_made" value="{{ report.errands_made }}" min="0" required>
+                                <span class="input-group-text"><i class="fas fa-tasks"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <small><i class="fas fa-info-circle me-2"></i>All metrics are automatically calculated and updated in real-time</small>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-sticky-note"></i>
+                        Additional Notes
+                    </h4>
+                    
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" name="notes" id="notes" rows="4" placeholder="Add any comments about this day...">{{ report.notes }}</textarea>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'crm:handler_reports' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Reports
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Update Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script>
+        function updateMetrics() {
+            const callsMade = parseInt(document.getElementById('calls_made').value) || 0;
+            const successfulCalls = parseInt(document.getElementById('successful_calls').value) || 0;
+            const weeklyTargetInput = document.querySelector('input[name="weekly_target"]');
+            const weeklyTarget = parseInt(weeklyTargetInput.value) || 1;
+            
+            let successRate = 0;
+            if (callsMade > 0) {
+                successRate = Math.round((successfulCalls / callsMade) * 100);
+            }
+            
+            let targetAchievement = Math.round((callsMade / weeklyTarget) * 100);
+            
+            document.getElementById('success-rate').textContent = successRate + '%';
+            document.getElementById('target-percentage').textContent = targetAchievement + '%';
+        }
+        
+        document.getElementById('calls_made').addEventListener('input', updateMetrics);
+        document.getElementById('successful_calls').addEventListener('input', updateMetrics);
+    </script>
+{% endblock %}

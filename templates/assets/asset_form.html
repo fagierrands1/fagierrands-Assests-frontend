@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if asset %}Edit Asset - {{ asset.asset_tag }}{% else %}Add New Asset{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if asset %}Edit Asset - {{ asset.asset_tag }}{% else %}Add New Asset{% endif %}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% if asset %}{% url 'asset_detail' asset.id %}{% else %}{% url 'asset_list' %}{% endif %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="asset_tag" class="form-label">Asset Tag</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control {% if form.asset_tag.errors %}is-invalid{% endif %}" 
+                                           id="asset_tag" name="asset_tag" value="{{ form.asset_tag.value|default:'' }}" 
+                                           placeholder="Leave empty to auto-generate">
+                                    <button class="btn btn-outline-secondary" type="button" id="generateAssetTag">
+                                        <i class="fas fa-magic me-1"></i>Generate
+                                    </button>
+                                </div>
+                                {% if form.asset_tag.errors %}
+                                    <div class="invalid-feedback">{{ form.asset_tag.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">
+                                    Will be auto-generated based on category if left empty
+                                    <span id="assetTagPreview" class="text-muted"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Asset Name *</label>
+                                <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                                       id="name" name="name" value="{{ form.name.value|default:'' }}" required>
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="serial_number" class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" name="serial_number" 
+                                       value="{{ form.serial_number.value|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select {% if form.status.errors %}is-invalid{% endif %}" id="status" name="status" required>
+                                    <option value="">Select status...</option>
+                                    <option value="active" {% if form.status.value == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="inactive" {% if form.status.value == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    <option value="maintenance" {% if form.status.value == 'maintenance' %}selected{% endif %}>Under Maintenance</option>
+                                    <option value="retired" {% if form.status.value == 'retired' %}selected{% endif %}>Retired</option>
+                                    <option value="lost" {% if form.status.value == 'lost' %}selected{% endif %}>Lost</option>
+                                    <option value="stolen" {% if form.status.value == 'stolen' %}selected{% endif %}>Stolen</option>
+                                </select>
+                                {% if form.status.errors %}
+                                    <div class="invalid-feedback">{{ form.status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Model Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="manufacturer" class="form-label">Manufacturer *</label>
+                                <select class="form-select {% if form.model.errors %}is-invalid{% endif %}" id="manufacturer" name="manufacturer" required>
+                                    <option value="">Select manufacturer...</option>
+                                    {% for manufacturer in manufacturers %}
+                                    <option value="{{ manufacturer.id }}" 
+                                            {% if asset and asset.model.manufacturer.id == manufacturer.id %}selected{% endif %}>
+                                        {{ manufacturer.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="asset_category" class="form-label">Category *</label>
+                                <select class="form-select" id="asset_category" name="asset_category" required>
+                                    <option value="">Select category...</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}"
+                                            {% if asset and asset.category and asset.category.id == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="model" class="form-label">Model *</label>
+                                <select class="form-select {% if form.model.errors %}is-invalid{% endif %}" id="model" name="model" required>
+                                    <option value="">Select model...</option>
+                                    {% for model in models %}
+                                    <option value="{{ model.id }}" 
+                                            data-manufacturer="{{ model.manufacturer.id }}" 
+                                            data-category="{{ model.category.id }}"
+                                            {% if asset and asset.model.id == model.id %}selected{% endif %}>
+                                        {{ model.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.model.errors %}
+                                    <div class="invalid-feedback">{{ form.model.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Assignment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="assigned_users" class="form-label">Assigned To</label>
+                                <select class="form-select" id="assigned_users" name="assigned_users" multiple>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}"
+                                            {% if asset and user in asset.assigned_users.all %}selected{% endif %}>
+                                        {{ user.get_full_name }} ({{ user.email }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Hold Ctrl (Cmd on Mac) to select multiple users</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department</label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">No department</option>
+                                    {% for department in departments %}
+                                    <option value="{{ department.id }}" 
+                                            {% if asset and asset.department and asset.department.id == department.id %}selected{% endif %}>
+                                        {{ department.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <select class="form-select" id="location" name="location">
+                                    <option value="">No location</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location.id }}" 
+                                            {% if asset and asset.location and asset.location.id == location.id %}selected{% endif %}>
+                                        {{ location.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Financial Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="purchase_date" class="form-label">Purchase Date</label>
+                                <input type="date" class="form-control" id="purchase_date" name="purchase_date" 
+                                       value="{{ form.purchase_date.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="purchase_cost" class="form-label">Purchase Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="purchase_cost" name="purchase_cost" 
+                                           step="0.01" min="0" value="{{ form.purchase_cost.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="warranty_expires" class="form-label">Warranty Expires</label>
+                                <input type="date" class="form-control" id="warranty_expires" name="warranty_expires" 
+                                       value="{{ form.warranty_expires.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Network Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="ip_address" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                                       value="{{ form.ip_address.value|default:'' }}" placeholder="192.168.1.100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="mac_address" class="form-label">MAC Address</label>
+                                <input type="text" class="form-control" id="mac_address" name="mac_address" 
+                                       value="{{ form.mac_address.value|default:'' }}" placeholder="XX:XX:XX:XX:XX:XX">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="hostname" class="form-label">Hostname</label>
+                                <input type="text" class="form-control" id="hostname" name="hostname" 
+                                       value="{{ form.hostname.value|default:'' }}" placeholder="computer-name">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Device Specifications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Device Specifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="device_name" class="form-label">Device Name</label>
+                                <input type="text" class="form-control" id="device_name" name="device_name" 
+                                       value="{{ form.device_name.value|default:'' }}" 
+                                       placeholder="e.g., DESKTOP-2ANTBJU">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="processor" class="form-label">Processor</label>
+                                <input type="text" class="form-control" id="processor" name="processor" 
+                                       value="{{ form.processor.value|default:'' }}" 
+                                       placeholder="e.g., Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="installed_ram" class="form-label">Installed RAM</label>
+                                <input type="text" class="form-control" id="installed_ram" name="installed_ram" 
+                                       value="{{ form.installed_ram.value|default:'' }}" 
+                                       placeholder="e.g., 16.0 GB (15.8 GB usable)">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="system_type" class="form-label">System Type</label>
+                                <input type="text" class="form-control" id="system_type" name="system_type" 
+                                       value="{{ form.system_type.value|default:'' }}" 
+                                       placeholder="e.g., 64-bit operating system, x64-based processor">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="device_id" class="form-label">Device ID</label>
+                                <input type="text" class="form-control" id="device_id" name="device_id" 
+                                       value="{{ form.device_id.value|default:'' }}" 
+                                       placeholder="e.g., 892289DA-F44C-492C-87B5-96364D4643D3">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="product_id" class="form-label">Product ID</label>
+                                <input type="text" class="form-control" id="product_id" name="product_id" 
+                                       value="{{ form.product_id.value|default:'' }}" 
+                                       placeholder="e.g., 00330-52210-65927-AAOEM">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="fillSampleDeviceInfo()">
+                                <i class="fas fa-magic me-1"></i>Fill Sample Device Info
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Additional Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4" 
+                                  placeholder="Any additional notes about this asset...">{{ form.notes.value|default:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Asset Image</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        {% if asset and asset.image %}
+                        <div class="form-text">
+                            Current image: <a href="{{ asset.image.url }}" target="_blank">{{ asset.image.name }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if asset %}{% url 'asset_detail' asset.id %}{% else %}{% url 'asset_list' %}{% endif %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{% if asset %}Update Asset{% else %}Create Asset{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Help</h5>
+            </div>
+            <div class="card-body">
+                <h6>Required Fields</h6>
+                <p class="small text-muted">Fields marked with * are required and must be filled out.</p>
+                
+                <h6>Asset Tag</h6>
+                <p class="small text-muted">Use a unique identifier like "LAP001" or "DT-2024-001". This cannot be changed after creation.</p>
+                
+                <h6>Model Selection</h6>
+                <p class="small text-muted">Select manufacturer and category first, then choose the specific model. If the model doesn't exist, create it in the admin panel first.</p>
+                
+                <h6>Network Information</h6>
+                <p class="small text-muted">MAC address format: XX:XX:XX:XX:XX:XX (e.g., 00:1B:44:11:3A:B7)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Filter models based on manufacturer and category selection
+    function filterModels() {
+        var selectedManufacturer = $('#manufacturer').val();
+        var selectedCategory = $('#asset_category').val();
+        var modelSelect = $('#model');
+        
+        modelSelect.find('option').each(function() {
+            var option = $(this);
+            if (option.val() === '') {
+                option.show();
+                return;
+            }
+            
+            var manufacturerMatch = !selectedManufacturer || option.data('manufacturer') == selectedManufacturer;
+            var categoryMatch = !selectedCategory || option.data('category') == selectedCategory;
+            
+            if (manufacturerMatch && categoryMatch) {
+                option.show();
+            } else {
+                option.hide();
+            }
+        });
+        
+        // Reset model selection if current selection is now hidden
+        if (modelSelect.find('option:selected').is(':hidden')) {
+            modelSelect.val('');
+        }
+    }
+    
+    $('#manufacturer, #asset_category').on('change', filterModels);
+    
+    // Initialize filters
+    filterModels();
+    
+    // Show asset tag preview when model changes
+    $('#model').on('change', function() {
+        var modelId = $(this).val();
+        var preview = $('#assetTagPreview');
+        
+        if (modelId && !$('#asset_tag').val()) {
+            var selectedOption = $(this).find('option:selected');
+            var categoryName = selectedOption.data('category-name');
+            if (categoryName) {
+                var prefix = categoryName.substring(0, 3).toUpperCase();
+                preview.text('(e.g., ' + prefix + '-001)');
+            } else {
+                preview.text('');
+            }
+        } else {
+            preview.text('');
+        }
+    });
+    
+    // Format MAC address input
+    $('#mac_address').on('input', function() {
+        var value = $(this).val().replace(/[^a-fA-F0-9]/g, '');
+        var formatted = value.match(/.{1,2}/g)?.join(':') || value;
+        if (formatted.length > 17) {
+            formatted = formatted.substring(0, 17);
+        }
+        $(this).val(formatted.toUpperCase());
+    });
+    
+    // Validate IP address format
+    $('#ip_address').on('blur', function() {
+        var ip = $(this).val();
+        if (ip && !isValidIP(ip)) {
+            $(this).addClass('is-invalid');
+            if (!$(this).siblings('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">Please enter a valid IP address</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).siblings('.invalid-feedback').remove();
+        }
+    });
+    
+    function isValidIP(ip) {
+        var parts = ip.split('.');
+        if (parts.length !== 4) return false;
+        return parts.every(function(part) {
+            var num = parseInt(part, 10);
+            return num >= 0 && num <= 255 && part === num.toString();
+        });
+    }
+    
+    // Generate asset tag based on selected model's category
+    $('#generateAssetTag').on('click', function() {
+        var modelId = $('#model').val();
+        if (!modelId) {
+            alert('Please select a model first to generate an asset tag.');
+            return;
+        }
+        
+        var button = $(this);
+        var originalText = button.html();
+        button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Generating...');
+        
+        $.ajax({
+            url: '{% url "generate_asset_tag" %}',
+            method: 'POST',
+            data: {
+                'model_id': modelId,
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#asset_tag').val(response.asset_tag);
+                } else {
+                    alert('Error generating asset tag: ' + response.error);
+                }
+            },
+            error: function() {
+                alert('Error generating asset tag. Please try again.');
+            },
+            complete: function() {
+                button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+});
+
+function fillSampleDeviceInfo() {
+    document.getElementById('device_name').value = 'DESKTOP-2ANTBJU';
+    document.getElementById('processor').value = 'Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz   1.90 GHz';
+    document.getElementById('installed_ram').value = '16.0 GB (15.8 GB usable)';
+    document.getElementById('device_id').value = '892289DA-F44C-492C-87B5-96364D4643D3';
+    document.getElementById('product_id').value = '00330-52210-65927-AAOEM';
+    document.getElementById('system_type').value = '64-bit operating system, x64-based processor';
+}
+</script>
+{% endblock %}

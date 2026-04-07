@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}User Assignments - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">User Assignments</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card primary">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card success">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Users with Assets</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.users_with_assets }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card warning">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Assigned Assets</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.assigned_assets }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-laptop fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card danger">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Unassigned Assets</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.unassigned_assets }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Assignments Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">User Asset Assignments</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="assignmentsTable">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Assets Assigned</th>
+                        <th>Asset Details</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user_data in user_assignments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                                <div>
+                                    <strong>{{ user_data.user.get_full_name }}</strong><br>
+                                    <small class="text-muted">{{ user_data.user.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if user_data.user.userprofile.department %}
+                                {{ user_data.user.userprofile.department.name }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user_data.user.email }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ user_data.asset_count }}</span>
+                        </td>
+                        <td>
+                            {% if user_data.assets %}
+                                <div class="asset-list">
+                                    {% for asset in user_data.assets|slice:":3" %}
+                                    <div class="mb-1">
+                                        <a href="{% url 'asset_detail' asset.id %}" class="text-decoration-none">
+                                            <small>
+                                                <i class="fas fa-laptop me-1"></i>
+                                                {{ asset.asset_tag }} - {{ asset.name|truncatechars:30 }}
+                                            </small>
+                                        </a>
+                                        <span class="badge badge-sm bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% else %}secondary{% endif %}">
+                                            {{ asset.get_status_display }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                    {% if user_data.asset_count > 3 %}
+                                    <small class="text-muted">... and {{ user_data.asset_count|add:"-3" }} more</small>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">No assets assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#assignAssetModal"
+                                        data-user-id="{{ user_data.user.id }}" 
+                                        data-user-name="{{ user_data.user.get_full_name }}"
+                                        title="Assign Asset">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                        onclick="viewUserAssets({{ user_data.user.id }})"
+                                        title="View All Assets">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No users found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Unassigned Assets -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Unassigned Assets</h5>
+    </div>
+    <div class="card-body">
+        {% if unassigned_assets %}
+        <div class="row">
+            {% for asset in unassigned_assets|slice:":12" %}
+            <div class="col-md-4 col-lg-3 mb-3">
+                <div class="card asset-card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <a href="{% url 'asset_detail' asset.id %}" class="text-decoration-none">
+                                {{ asset.asset_tag }}
+                            </a>
+                        </h6>
+                        <p class="card-text">
+                            <small class="text-muted">{{ asset.model.manufacturer.name }}</small><br>
+                            {{ asset.name|truncatechars:25 }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% else %}secondary{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" data-bs-target="#assignAssetModal"
+                                    data-asset-id="{{ asset.id }}" 
+                                    data-asset-name="{{ asset.asset_tag }} - {{ asset.name }}"
+                                    title="Assign to User">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if unassigned_assets.count > 12 %}
+        <div class="text-center mt-3">
+            <a href="{% url 'asset_list' %}?assigned_to=" class="btn btn-outline-primary">
+                View All {{ unassigned_assets.count }} Unassigned Assets
+            </a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <p class="text-muted">All assets are assigned!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Assign Asset Modal -->
+<div class="modal fade" id="assignAssetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignAssetForm">
+                    <div class="mb-3">
+                        <label for="userSelect" class="form-label">Select User</label>
+                        <select class="form-select" id="userSelect" name="user_id" required>
+                            <option value="">Choose a user...</option>
+                            {% for user in all_users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name }} ({{ user.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assetSelect" class="form-label">Select Asset</label>
+                        <select class="form-select" id="assetSelect" name="asset_id" required>
+                            <option value="">Choose an asset...</option>
+                            {% for asset in unassigned_assets %}
+                            <option value="{{ asset.id }}">{{ asset.asset_tag }} - {{ asset.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignmentNotes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="assignmentNotes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="assignAsset()">Assign Asset</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#assignmentsTable').DataTable({
+        "pageLength": 25,
+        "order": [[ 0, "asc" ]],
+        "columnDefs": [
+            { "orderable": false, "targets": -1 }
+        ]
+    });
+});
+
+function viewUserAssets(userId) {
+    // Redirect to asset list filtered by user
+    window.location.href = "{% url 'asset_list' %}?assigned_to=" + userId;
+}
+
+function assignAsset() {
+    const form = document.getElementById('assignAssetForm');
+    const formData = new FormData(form);
+    
+    // Here you would typically make an AJAX call to assign the asset
+    // For now, we'll just show an alert
+    alert('Asset assignment functionality would be implemented here');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('assignAssetModal'));
+    modal.hide();
+}
+
+// Handle modal data population
+$('#assignAssetModal').on('show.bs.modal', function (event) {
+    const button = $(event.relatedTarget);
+    const userId = button.data('user-id');
+    const userName = button.data('user-name');
+    const assetId = button.data('asset-id');
+    const assetName = button.data('asset-name');
+    
+    const modal = $(this);
+    
+    if (userId) {
+        modal.find('#userSelect').val(userId);
+    }
+    if (assetId) {
+        modal.find('#assetSelect').val(assetId);
+    }
+});
+</script>
+{% endblock %}

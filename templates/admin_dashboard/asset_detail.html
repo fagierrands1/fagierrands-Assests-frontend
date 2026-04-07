@@ -1,0 +1,480 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}{{ asset.asset_tag }} - Admin Dashboard{% endblock %}
+{% block page_title %}Asset Details{% endblock %}
+{% block page_subtitle %}{{ asset.asset_tag }} - {{ asset.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Asset Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-laptop me-2"></i>Asset Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Asset Tag</label>
+                            <div class="fw-bold">{{ asset.asset_tag }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Name</label>
+                            <div>{{ asset.name }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Model</label>
+                            <div>{{ asset.model.manufacturer.name }} {{ asset.model.name }}</div>
+                            <small class="text-muted">{% if asset.category %}{{ asset.category.name }}{% else %}{{ asset.model.category.name }}{% endif %}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Serial Number</label>
+                            <div>
+                                {% if asset.serial_number %}
+                                    {{ asset.serial_number }}
+                                {% else %}
+                                    <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Status</label>
+                            <div>
+                                {% if asset.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                {% elif asset.status == 'inactive' %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% elif asset.status == 'maintenance' %}
+                                    <span class="badge bg-warning">Maintenance</span>
+                                {% elif asset.status == 'retired' %}
+                                    <span class="badge bg-dark">Retired</span>
+                                {% elif asset.status == 'lost' %}
+                                    <span class="badge bg-danger">Lost</span>
+                                {% elif asset.status == 'stolen' %}
+                                    <span class="badge bg-danger">Stolen</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Assigned To</label>
+                            <div>
+                                {% if asset.assigned_to %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 30px; height: 30px;">
+                                            <span class="text-white small fw-bold">
+                                                {{ asset.assigned_to.first_name|first|default:asset.assigned_to.username|first|upper }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <div>{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}</div>
+                                            {% if asset.assigned_to.profile.employee_id %}
+                                                <small class="text-muted">{{ asset.assigned_to.profile.employee_id }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Department</label>
+                            <div>
+                                {% if asset.department %}
+                                    {{ asset.department.name }}
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Location</label>
+                            <div>
+                                {% if asset.location %}
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ asset.location.name }}
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Financial Information -->
+        {% if asset.purchase_date or asset.purchase_cost or asset.warranty_expires %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-dollar-sign me-2"></i>Financial Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Purchase Date</label>
+                            <div>
+                                {% if asset.purchase_date %}
+                                    {{ asset.purchase_date|date:"M d, Y" }}
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Purchase Cost</label>
+                            <div>
+                                {% if asset.purchase_cost %}
+                                    ${{ asset.purchase_cost|floatformat:2 }}
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Warranty Status</label>
+                            <div>
+                                {% if asset.warranty_expires %}
+                                    {% now "Y-m-d" as today %}
+                                    {% if asset.warranty_expires|date:"Y-m-d" > today %}
+                                        <span class="badge bg-success">Active</span>
+                                        <div class="small text-muted">Expires {{ asset.warranty_expires|date:"M d, Y" }}</div>
+                                    {% else %}
+                                        <span class="badge bg-danger">Expired</span>
+                                        <div class="small text-muted">Expired {{ asset.warranty_expires|date:"M d, Y" }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Technical Information -->
+        {% if asset.ip_address or asset.mac_address or asset.hostname or asset.processor or asset.installed_ram %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-microchip me-2"></i>Technical Information
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">IP Address</label>
+                            <div>
+                                {% if asset.ip_address %}
+                                    <code>{{ asset.ip_address }}</code>
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">MAC Address</label>
+                            <div>
+                                {% if asset.mac_address %}
+                                    <code>{{ asset.mac_address }}</code>
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Hostname</label>
+                            <div>
+                                {% if asset.hostname %}
+                                    <code>{{ asset.hostname }}</code>
+                                {% else %}
+                                    <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Last Seen</label>
+                            <div>
+                                {% if asset.last_seen %}
+                                    <span title="{{ asset.last_seen }}">{{ asset.last_seen|timesince }} ago</span>
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Processor</label>
+                            <div>
+                                {% if asset.processor %}
+                                    {{ asset.processor }}
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">RAM</label>
+                            <div>
+                                {% if asset.installed_ram %}
+                                    {{ asset.installed_ram }}
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notes -->
+        {% if asset.notes %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-sticky-note me-2"></i>Notes
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ asset.notes|linebreaks }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Asset History -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-history me-2"></i>Asset History
+            </div>
+            <div class="card-body">
+                {% if history %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>User</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in history %}
+                                <tr>
+                                    <td>
+                                        {% if record.action == 'created' %}
+                                            <i class="fas fa-plus text-success"></i>
+                                        {% elif record.action == 'updated' %}
+                                            <i class="fas fa-edit text-warning"></i>
+                                        {% elif record.action == 'assigned' %}
+                                            <i class="fas fa-user-plus text-info"></i>
+                                        {% elif record.action == 'moved' %}
+                                            <i class="fas fa-arrows-alt text-primary"></i>
+                                        {% elif record.action == 'status_changed' %}
+                                            <i class="fas fa-exchange-alt text-warning"></i>
+                                        {% endif %}
+                                        {{ record.action|title }}
+                                    </td>
+                                    <td>{{ record.description }}</td>
+                                    <td>
+                                        {% if record.user %}
+                                            {{ record.user.get_full_name|default:record.user.username }}
+                                        {% else %}
+                                            <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span title="{{ record.timestamp }}">
+                                            {{ record.timestamp|timesince }} ago
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No history records found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Maintenance Records -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-wrench me-2"></i>Maintenance Records
+            </div>
+            <div class="card-body">
+                {% if maintenance_records %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Scheduled</th>
+                                    <th>Performed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in maintenance_records %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-info">{{ record.maintenance_type|title }}</span>
+                                    </td>
+                                    <td>{{ record.title }}</td>
+                                    <td>
+                                        {% if record.status == 'scheduled' %}
+                                            <span class="badge bg-warning">Scheduled</span>
+                                        {% elif record.status == 'in_progress' %}
+                                            <span class="badge bg-primary">In Progress</span>
+                                        {% elif record.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif record.status == 'cancelled' %}
+                                            <span class="badge bg-secondary">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.scheduled_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if record.performed_by %}
+                                            {{ record.performed_by.get_full_name|default:record.performed_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-wrench fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No maintenance records found</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_dashboard:asset_edit' asset.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Edit Asset
+                    </a>
+                    <a href="/assets/{{ asset.id }}/qr-label/" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-qrcode me-2"></i>Print QR Label
+                    </a>
+                    <button class="btn btn-outline-info" onclick="navigator.clipboard.writeText('{{ asset.asset_tag }}')">
+                        <i class="fas fa-copy me-2"></i>Copy Asset Tag
+                    </button>
+                    <hr>
+                    <a href="{% url 'admin_dashboard:asset_delete' asset.id %}" 
+                       class="btn btn-outline-danger delete-confirm">
+                        <i class="fas fa-trash me-2"></i>Delete Asset
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- QR Code -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-qrcode me-2"></i>QR Code
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ request.build_absolute_uri }}" 
+                         alt="QR Code for {{ asset.asset_tag }}" class="img-fluid">
+                </div>
+                <p class="small text-muted">Scan to view asset details</p>
+            </div>
+        </div>
+        
+        <!-- Asset Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Statistics
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ history|length }}</h4>
+                            <small class="text-muted">History Records</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-info">{{ maintenance_records|length }}</h4>
+                        <small class="text-muted">Maintenance Records</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Created:</span>
+                        <span>{{ asset.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Updated:</span>
+                        <span>{{ asset.updated_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Age:</span>
+                        <span>{{ asset.created_at|timesince }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Asset Information -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>Asset Information
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>Asset ID:</strong> {{ asset.id }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Category:</strong> {{ asset.model.category.name }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Manufacturer:</strong> {{ asset.model.manufacturer.name }}
+                    </div>
+                    {% if asset.model.model_number %}
+                    <div class="mb-2">
+                        <strong>Model Number:</strong> {{ asset.model.model_number }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

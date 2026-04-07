@@ -1,0 +1,37 @@
+<!-- Assign User Modal -->
+<div class="modal fade" id="assignUserModal" tabindex="-1" aria-labelledby="assignUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignUserModalLabel">Assign User to Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form class="quick-action-form" action="{% url 'asset_assign_user' asset.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Select User</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to" required>
+                            <option value="">Choose a user...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if asset.assigned_to.id == user.id %}selected{% endif %}>
+                                {{ user.get_full_name }} ({{ user.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assignment_notes" class="form-label">Assignment Notes (Optional)</label>
+                        <textarea class="form-control" id="assignment_notes" name="assignment_notes" rows="3" placeholder="Add any notes about this assignment..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-1"></i>Assign User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

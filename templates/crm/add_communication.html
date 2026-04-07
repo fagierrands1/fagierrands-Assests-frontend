@@ -1,0 +1,546 @@
+{% extends "crm/employee_base.html" %}
+
+{% block page_title %}Log Communication{% endblock %}
+{% block page_header %}Log Communication{% endblock %}
+{% block page_subtitle %}Record your customer interactions and communications{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <style>
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        
+        .form-section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 0.5rem;
+            color: #6366f1;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+        }
+        
+        .communication-type-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .type-option {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .type-option:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+        }
+        
+        .type-option.selected {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+        }
+        
+        .type-option i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .contact-search {
+            position: relative;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .search-result-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .search-result-item:hover {
+            background: #f9fafb;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .quick-templates {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .template-btn {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .template-btn:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.375rem 0.75rem;
+        }
+        .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+            padding: 0.375rem 0.75rem;
+        }
+    </style>
+{% endblock %}
+
+{% block employee_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-card" data-aos="fade-up">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Communication Type Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-comments"></i>
+                        Communication Type
+                    </h4>
+                    
+                    <div class="communication-type-selector">
+                        {% for value, label in communication_types %}
+                        <div class="type-option" data-type="{{ value }}">
+                            <i class="fas 
+                                {% if value == 'call' %}fa-phone
+                                {% elif value == 'email' %}fa-envelope
+                                {% elif value == 'meeting' %}fa-users
+                                {% elif value == 'chat' %}fa-comments
+                                {% else %}fa-sticky-note{% endif %}">
+                            </i>
+                            <div class="fw-bold">{{ label }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <input type="hidden" name="communication_type" id="communication_type" required>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="direction" class="form-label">Direction</label>
+                            <select class="form-select" name="direction" id="direction">
+                                {% for value, label in direction_choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="duration-field" style="display: none;">
+                            <label for="duration_minutes" class="form-label">Duration (minutes)</label>
+                            <input type="number" class="form-control" name="duration_minutes" id="duration_minutes" min="0" step="0.01" placeholder="e.g., 2.5 for 2 min 30 sec">
+                            <small class="form-text text-muted">Use decimals for seconds (e.g., 2.5 = 2 min 30 sec). Leave blank for unknown duration.</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Information Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-user"></i>
+                        Contact Information
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="contact_type" class="form-label">Contact Type</label>
+                            <select class="form-select" id="contact_type" onchange="toggleContactFields()">
+                                <option value="">Select contact type</option>
+                                <option value="customer">Existing Customer</option>
+                                <option value="lead">Existing Lead</option>
+                                <option value="new">New Contact</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Selection -->
+                    <div id="customer-section" style="display: none;">
+                        <div class="mb-3">
+                            <label for="customer" class="form-label">Search Customer</label>
+                            <select class="form-select" id="customer" name="customer_id">
+                                <option value="">-- Select Customer --</option>
+                                {% for customer in customers %}
+                                    <option value="{{ customer.id }}">{{ customer.full_name }} - {{ customer.phone }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Lead Selection -->
+                    <div id="lead-section" style="display: none;">
+                        <div class="mb-3">
+                            <label for="lead" class="form-label">Search Lead</label>
+                            <select class="form-select" id="lead" name="lead_id">
+                                <option value="">-- Select Lead --</option>
+                                {% for lead in leads %}
+                                    <option value="{{ lead.id }}">{{ lead.full_name }} - {{ lead.phone }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- New Contact Fields -->
+                    <div id="new-contact-section" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="contact_name" class="form-label">Contact Name</label>
+                                    <input type="text" class="form-control" name="contact_name" id="contact_name">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="contact_email" id="contact_email">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">Phone</label>
+                                    <input type="tel" class="form-control" name="contact_phone" id="contact_phone">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Communication Details Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-edit"></i>
+                        Communication Details
+                    </h4>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" name="subject" id="subject" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Content</label>
+                        <div class="quick-templates">
+                            <small class="text-muted d-block mb-2">Quick Templates:</small>
+                            <button type="button" class="template-btn" onclick="insertTemplate('followup')">
+                                Follow-up Call
+                            </button>
+                            <button type="button" class="template-btn" onclick="insertTemplate('meeting')">
+                                Meeting Notes
+                            </button>
+                            <button type="button" class="template-btn" onclick="insertTemplate('proposal')">
+                                Proposal Discussion
+                            </button>
+                            <button type="button" class="template-btn" onclick="insertTemplate('support')">
+                                Support Issue
+                            </button>
+                        </div>
+                        <textarea class="form-control" name="content" id="content" rows="6" required 
+                                  placeholder="Describe the communication details..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Follow-up Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-calendar-check"></i>
+                        Follow-up & Source
+                    </h4>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="requires_followup"
+                                   id="requires_followup" onchange="toggleFollowupDate()">
+                            <label class="form-check-label" for="requires_followup">
+                                This communication requires follow-up
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="followup-date-section" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="followup_date" class="form-label">Follow-up Date & Time</label>
+                                <input type="datetime-local" class="form-control" name="followup_date" id="followup_date">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_sourced"
+                                   id="is_sourced">
+                            <label class="form-check-label" for="is_sourced">
+                                This communication was sourced (generated leads or opportunities)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'crm:employee_communications' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Log Communication
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof jQuery !== 'undefined') {
+                // CRM base URL (adjust if CRM is on a different host/port)
+                const CRM_BASE = 'http://localhost:8001'; // change if needed
+                const CRM_CUSTOMERS_ENDPOINT = CRM_BASE + '/api/customers/';
+        
+                // If you use an API key in production, set it here (or inject it server-side)
+                const CRM_API_KEY = ''; // e.g. 'YOUR_API_KEY'
+        
+                // Customer select2 - AJAX lookup against CRM
+                jQuery('#customer').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '-- Search Customer --',
+                    allowClear: true,
+                    width: '100%',
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: CRM_CUSTOMERS_ENDPOINT,
+                        dataType: 'json',
+                        delay: 250,
+                        headers: (function() {
+                            if (CRM_API_KEY) return { 'Authorization': 'Bearer ' + CRM_API_KEY };
+                            return {};
+                        })(),
+                        data: function(params) {
+                            return {
+                                search: params.term || '',
+                                page: params.page || 1,
+                                page_size: 20,
+                                simple: 1
+                            };
+                        },
+                        processResults: function(data, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: data.results || [],
+                                pagination: { more: data.pagination ? data.pagination.more : false }
+                            };
+                        },
+                        cache: true
+                    },
+                    templateResult: function(item) {
+                        if (item.loading) return item.text;
+                        return item.text;
+                    },
+                    templateSelection: function(item) {
+                        return item.text || item.id;
+                    }
+                });
+        
+                // Lead select2 (keeps local preloaded list, change to AJAX if you add a leads endpoint)
+                jQuery('#lead').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '-- Select Lead --',
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        });
+        
+        // Communication type selection
+        document.querySelectorAll('.type-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.type-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('communication_type').value = this.dataset.type;
+        
+                const durationType = this.dataset.type;
+                const durationField = document.getElementById('duration-field');
+                if (durationField) {
+                    if (durationType === 'call' || durationType === 'meeting') {
+                        durationField.style.display = 'block';
+                    } else {
+                        durationField.style.display = 'none';
+                    }
+                }
+            });
+        });
+        
+        // Contact type toggle
+        function toggleContactFields() {
+            const contactType = document.getElementById('contact_type').value;
+            const customerSection = document.getElementById('customer-section');
+            const leadSection = document.getElementById('lead-section');
+            const newContactSection = document.getElementById('new-contact-section');
+        
+            if (customerSection) customerSection.style.display = 'none';
+            if (leadSection) leadSection.style.display = 'none';
+            if (newContactSection) newContactSection.style.display = 'none';
+        
+            if (contactType === 'customer' && customerSection) {
+                customerSection.style.display = 'block';
+            } else if (contactType === 'lead' && leadSection) {
+                leadSection.style.display = 'block';
+            } else if (contactType === 'new' && newContactSection) {
+                newContactSection.style.display = 'block';
+            }
+        }
+        
+        // Follow-up date toggle
+        function toggleFollowupDate() {
+            const checkbox = document.getElementById('requires_followup');
+            const dateSection = document.getElementById('followup-date-section');
+        
+            if (!checkbox || !dateSection) return;
+        
+            if (checkbox.checked) {
+                dateSection.style.display = 'block';
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(9, 0, 0, 0);
+                const el = document.getElementById('followup_date');
+                if (el) el.value = tomorrow.toISOString().slice(0, 16);
+            } else {
+                dateSection.style.display = 'none';
+            }
+        }
+        
+        // Template insertion
+        function insertTemplate(templateType) {
+            const contentField = document.getElementById('content');
+            if (!contentField) return;
+            let template = '';
+        
+            switch(templateType) {
+                case 'followup':
+                    template = 'Follow-up call to discuss:\\n\\n- \\n- \\n- \\n\\nNext steps:\\n- ';
+                    break;
+                case 'meeting':
+                    template = 'Meeting attendees:\\n- \\n\\nTopics discussed:\\n- \\n- \\n\\nAction items:\\n- \\n\\nNext meeting: ';
+                    break;
+                case 'proposal':
+                    template = 'Proposal discussion:\\n\\nRequirements:\\n- \\n- \\n\\nProposed solution:\\n- \\n\\nNext steps:\\n- ';
+                    break;
+                case 'support':
+                    template = 'Support issue:\\n\\nProblem description:\\n\\n\\nResolution provided:\\n\\n\\nStatus: ';
+                    break;
+            }
+        
+            contentField.value = template;
+            contentField.focus();
+        }
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const communicationType = document.getElementById('communication_type').value;
+            if (!communicationType) {
+                event.preventDefault();
+                alert('Please select a communication type.');
+                return;
+            }
+        
+            const contactType = document.getElementById('contact_type').value;
+            if (!contactType) {
+                event.preventDefault();
+                alert('Please select a contact type.');
+                return;
+            }
+        
+            // Validate customer/lead selection. Select2 stores value in the select element's value.
+            if (contactType === 'customer') {
+                const customerEl = document.getElementById('customer');
+                if (!customerEl || !customerEl.value) {
+                    event.preventDefault();
+                    alert('Please select a customer.');
+                    return;
+                }
+            }
+        
+            if (contactType === 'lead') {
+                const leadEl = document.getElementById('lead');
+                if (!leadEl || !leadEl.value) {
+                    event.preventDefault();
+                    alert('Please select a lead.');
+                    return;
+                }
+            }
+        
+            if (contactType === 'new') {
+                const nameEl = document.getElementById('contact_name');
+                if (!nameEl || !nameEl.value.trim()) {
+                    event.preventDefault();
+                    alert('Please enter a contact name.');
+                    return;
+                }
+            }
+        });
+    </script>
+{% endblock %}

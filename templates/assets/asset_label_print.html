@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Label - {{ asset.asset_tag }}</title>
+    <style>
+        /* Print-optimized styles */
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+        
+        .label-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.1in;
+            padding: 0.1in;
+        }
+        
+        .asset-label {
+            width: 2.5in;
+            height: 2.0in;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 8px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+        }
+        
+        .qr-code {
+            margin-bottom: 4px;
+        }
+        
+        .qr-code canvas {
+            width: 80px !important;
+            height: 80px !important;
+        }
+        
+        .asset-info {
+            font-size: 8px;
+            line-height: 1.1;
+            margin-top: 2px;
+        }
+        
+        .asset-tag {
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+        
+        .asset-name {
+            font-size: 7px;
+            color: #666;
+            margin-bottom: 1px;
+        }
+        
+        .asset-model {
+            font-size: 6px;
+            color: #999;
+        }
+        
+        .company-info {
+            font-size: 6px;
+            color: #333;
+            margin-top: 2px;
+            text-align: center;
+        }
+        
+        /* Avery 5160 label format (30 labels per page) */
+        .avery-5160 .asset-label {
+            width: 2.625in;
+            height: 1in;
+            margin: 0.125in 0.1875in;
+            border: 1px solid #ccc;
+            padding: 4px;
+        }
+        
+        .avery-5160 .qr-code canvas {
+            width: 60px !important;
+            height: 60px !important;
+        }
+        
+        .avery-5160 .asset-info {
+            font-size: 6px;
+        }
+        
+        .avery-5160 .asset-tag {
+            font-size: 8px;
+        }
+        
+        /* Large format for individual labels */
+        .large-format .asset-label {
+            width: 4in;
+            height: 3in;
+            border: 2px solid #000;
+            padding: 16px;
+        }
+        
+        .large-format .qr-code canvas {
+            width: 150px !important;
+            height: 150px !important;
+        }
+        
+        .large-format .asset-info {
+            font-size: 12px;
+        }
+        
+        .large-format .asset-tag {
+            font-size: 16px;
+        }
+        
+        .large-format .company-info {
+            font-size: 10px;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .label-container {
+                gap: 0 !important;
+                padding: 0 !important;
+            }
+        }
+        
+        /* Controls for web preview */
+        .controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background: #0056b3;
+        }
+        
+        .controls select {
+            padding: 6px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls no-print">
+        <h3>Asset Label Printing - {{ asset.asset_tag }}</h3>
+        <div>
+            <label for="format-select">Label Format:</label>
+            <select id="format-select" onchange="changeFormat()">
+                <option value="standard">Standard (2.5" x 2")</option>
+                <option value="avery-5160">Avery 5160 (2.625" x 1")</option>
+                <option value="large-format">Large Format (4" x 3")</option>
+            </select>
+            
+            <label for="count-select">Number of Labels:</label>
+            <select id="count-select" onchange="generateLabels()">
+                <option value="1">1 Label</option>
+                <option value="2">2 Labels</option>
+                <option value="4">4 Labels</option>
+                <option value="6">6 Labels</option>
+                <option value="8">8 Labels</option>
+                <option value="12">12 Labels</option>
+                <option value="20">20 Labels</option>
+                <option value="30">30 Labels (Full Avery Sheet)</option>
+            </select>
+            
+            <button onclick="window.print()">Print Labels</button>
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="window.close()">Close</button>
+        </div>
+    </div>
+    
+    <div class="label-container" id="label-container">
+        <!-- Labels will be generated here -->
+    </div>
+    
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        const assetData = {
+            tag: "{{ asset.asset_tag|escapejs }}",
+            name: "{{ asset.name|escapejs }}",
+            model: "{{ asset.model.name|escapejs }}",
+            manufacturer: "{{ asset.model.manufacturer.name|escapejs }}",
+            url: "{{ request.build_absolute_uri|escapejs }}",
+            location: "{{ asset.location.name|default:'Not assigned'|escapejs }}",
+            assignedTo: "{{ asset.assigned_to.get_full_name|default:'Unassigned'|escapejs }}"
+        };
+        
+        let currentFormat = 'standard';
+        let currentCount = 1;
+        
+        function changeFormat() {
+            const select = document.getElementById('format-select');
+            currentFormat = select.value;
+            
+            const container = document.getElementById('label-container');
+            container.className = 'label-container ' + currentFormat;
+            
+            // Regenerate labels with new format
+            generateLabels();
+        }
+        
+        function generateLabels() {
+            const countSelect = document.getElementById('count-select');
+            currentCount = parseInt(countSelect.value);
+            
+            const container = document.getElementById('label-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < currentCount; i++) {
+                createLabel(container);
+            }
+        }
+        
+        function createLabel(container) {
+            const label = document.createElement('div');
+            label.className = 'asset-label';
+            
+            // Create QR code container
+            const qrContainer = document.createElement('div');
+            qrContainer.className = 'qr-code';
+            
+            // Create canvas for QR code
+            const canvas = document.createElement('canvas');
+            qrContainer.appendChild(canvas);
+            
+            // Generate QR code
+            const qrSize = getQRSize();
+            QRCode.toCanvas(canvas, assetData.url, {
+                width: qrSize,
+                height: qrSize,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            });
+            
+            // Create asset info
+            const assetInfo = document.createElement('div');
+            assetInfo.className = 'asset-info';
+            assetInfo.innerHTML = `
+                <div class="asset-tag">${assetData.tag}</div>
+                <div class="asset-name">${assetData.name}</div>
+                <div class="asset-model">${assetData.manufacturer} ${assetData.model}</div>
+                <div class="company-info">Property of Your Company</div>
+            `;
+            
+            label.appendChild(qrContainer);
+            label.appendChild(assetInfo);
+            container.appendChild(label);
+        }
+        
+        function getQRSize() {
+            switch(currentFormat) {
+                case 'avery-5160':
+                    return 60;
+                case 'large-format':
+                    return 150;
+                default:
+                    return 80;
+            }
+        }
+        
+        function downloadPDF() {
+            // For now, just open print dialog
+            // In a real implementation, you might want to use a library like jsPDF
+            alert('PDF download feature coming soon. For now, use Print to save as PDF.');
+            window.print();
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            generateLabels();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+{% extends "admin_dashboard/base.html" %}
+
+{% block page_title %}Time Tracking Overview{% endblock %}
+{% block page_header %}Time Tracking Overview{% endblock %}
+{% block page_subtitle %}Monitor employee time tracking and work sessions{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4 animate-fade-in-up">
+    <h1>Time Tracking Overview</h1>
+    <div class="btn-group">
+        <a href="/admin-dashboard/employees/" class="btn btn-outline-primary">
+            <i class="fas fa-users me-2"></i>Employees
+        </a>
+        <a href="/admin-dashboard/tasks/" class="btn btn-outline-primary">
+            <i class="fas fa-tasks me-2"></i>Tasks
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4 animate-fade-in-up" style="animation-delay: 0.1s;">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-3">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="employee" class="form-label">Employee</label>
+                <select class="form-select" id="employee" name="employee">
+                    <option value="">All Employees</option>
+                    {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if employee_filter == emp.id|stringformat:"s" %}selected{% endif %}>
+                            {{ emp.full_name }} - {{ emp.position }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Download Options -->
+<div class="card mb-4 animate-fade-in-up" style="animation-delay: 0.15s; border-left: 4px solid #28a745;">
+    <div class="card-body">
+        <h6 class="card-title mb-3">
+            <i class="fas fa-download me-2" style="color: #28a745;"></i>
+            Download Reports
+        </h6>
+        
+        <!-- Detailed Report Section -->
+        <div class="mb-3 pb-3 border-bottom">
+            <p class="text-muted small mb-2"><strong>Detailed Report</strong> - View daily entries for each employee</p>
+            <div class="btn-group" role="group" aria-label="Detailed report formats">
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=csv&type=detailed" 
+                   class="btn btn-outline-success btn-sm" title="Download detailed report as CSV">
+                    <i class="fas fa-file-csv me-1"></i>CSV
+                </a>
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=xlsx&type=detailed" 
+                   class="btn btn-outline-success btn-sm" title="Download detailed report as Excel">
+                    <i class="fas fa-file-excel me-1"></i>Excel
+                </a>
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=pdf&type=detailed" 
+                   class="btn btn-outline-success btn-sm" title="Download detailed report as PDF">
+                    <i class="fas fa-file-pdf me-1"></i>PDF
+                </a>
+            </div>
+        </div>
+        
+        <!-- Summary Report Section -->
+        <div>
+            <p class="text-muted small mb-2"><strong>Summary Report</strong> - Total hours worked per employee</p>
+            <div class="btn-group" role="group" aria-label="Summary report formats">
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=csv&type=summary" 
+                   class="btn btn-outline-primary btn-sm" title="Download summary report as CSV">
+                    <i class="fas fa-file-csv me-1"></i>CSV
+                </a>
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=xlsx&type=summary" 
+                   class="btn btn-outline-primary btn-sm" title="Download summary report as Excel">
+                    <i class="fas fa-file-excel me-1"></i>Excel
+                </a>
+                <a href="{% url 'admin_dashboard:download_time_tracking_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&employee={{ employee_filter }}&format=pdf&type=summary" 
+                   class="btn btn-outline-primary btn-sm" title="Download summary report as PDF">
+                    <i class="fas fa-file-pdf me-1"></i>PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card animate-fade-in-up" style="animation-delay: 0.2s;">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="fas fa-clock fa-3x text-primary"></i>
+                </div>
+                <h3 class="stats-number">{{ total_hours|floatformat:1 }}</h3>
+                <p class="stats-label">Total Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="fas fa-calendar-check fa-3x text-success"></i>
+                </div>
+                <h3 class="stats-number">{{ total_sessions }}</h3>
+                <p class="stats-label">Work Sessions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card animate-fade-in-up" style="animation-delay: 0.4s;">
+            <div class="card-body text-center">
+                <div class="stats-icon mb-3">
+                    <i class="fas fa-chart-line fa-3x text-info"></i>
+                </div>
+                <h3 class="stats-number">{{ avg_hours_per_session|floatformat:1 }}</h3>
+                <p class="stats-label">Avg Hours/Session</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Time Tracking Data -->
+<div class="card animate-fade-in-up" style="animation-delay: 0.5s;">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-table me-2" style="color: var(--primary);"></i>
+            Work Sessions ({{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user me-2"></i>Employee</th>
+                            <th><i class="fas fa-calendar me-2"></i>Date</th>
+                            <th><i class="fas fa-sign-in-alt me-2"></i>Punch In</th>
+                            <th><i class="fas fa-sign-out-alt me-2"></i>Punch Out</th>
+                            <th><i class="fas fa-clock me-2"></i>Hours Worked</th>
+                            <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in page_obj %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ session.employee.full_name }}</div>
+                                        <small class="text-muted">{{ session.employee.position }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ session.date|date:"M d, Y" }}</span>
+                            </td>
+                            <td>
+                                {% if session.punch_in %}
+                                    <span class="text-success">
+                                        <i class="fas fa-sign-in-alt me-1"></i>
+                                        {{ session.punch_in|time:"H:i" }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Not punched in</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.punch_out %}
+                                    <span class="text-danger">
+                                        <i class="fas fa-sign-out-alt me-1"></i>
+                                        {{ session.punch_out|time:"H:i" }}
+                                    </span>
+                                {% else %}
+                                    {% if session.punch_in %}
+                                        <span class="text-warning">Still working</span>
+                                    {% else %}
+                                        <span class="text-muted">Not punched out</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.worked_hours %}
+                                    <span class="badge bg-primary">{{ session.worked_hours|floatformat:1 }}h</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.is_complete %}
+                                    <span class="badge bg-success">Complete</span>
+                                {% else %}
+                                    <span class="badge bg-warning">In Progress</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Time tracking pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if employee_filter %}&employee={{ employee_filter }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                <h5>No Time Tracking Data</h5>
+                <p class="text-muted">No work sessions found for the selected criteria.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

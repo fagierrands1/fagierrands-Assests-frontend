@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ profile_user.get_full_name|default:profile_user.username }} - User Information</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --dark: #1f2937;
+            --secondary: #6b7280;
+            --light: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        
+        .public-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .user-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .user-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+        }
+        
+        .user-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .user-header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+        }
+        
+        .user-name {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .user-title {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .user-body {
+            padding: 2rem;
+        }
+        
+        .info-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .info-item:hover {
+            background: rgba(248, 250, 252, 1);
+            transform: translateX(4px);
+        }
+        
+        .info-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.25rem;
+            color: white;
+        }
+        
+        .info-icon.employee { background: linear-gradient(135deg, #10b981, #059669); }
+        .info-icon.contact { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .info-icon.location { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+        .info-icon.department { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .info-icon.assets { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .info-icon.email { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        
+        .info-content {
+            flex: 1;
+        }
+        
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin: 0 0 0.25rem 0;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            font-size: 1rem;
+            color: var(--dark);
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .assets-list {
+            margin-top: 0.5rem;
+        }
+        
+        .asset-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+        }
+        
+        .asset-item:last-child {
+            border-bottom: none;
+        }
+        
+        .asset-tag {
+            font-weight: 600;
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+        
+        .asset-name {
+            color: var(--dark);
+            flex: 1;
+        }
+        
+        .asset-category {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+        
+        .footer-info {
+            background: rgba(248, 250, 252, 0.5);
+            padding: 1.5rem;
+            text-align: center;
+            border-top: 1px solid rgba(226, 232, 240, 0.3);
+        }
+        
+        .footer-text {
+            color: var(--secondary);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+        
+        .company-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0;
+            }
+            
+            .user-header {
+                padding: 1.5rem;
+            }
+            
+            .user-body {
+                padding: 1.5rem;
+            }
+            
+            .user-name {
+                font-size: 1.5rem;
+            }
+            
+            .user-title {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="public-container">
+        <div class="user-card">
+            <!-- User Header -->
+            <div class="user-header">
+                <div class="user-header-content">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h1 class="user-name">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                    {% if profile.job_title %}
+                        <p class="user-title">{{ profile.job_title }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- User Information -->
+            <div class="user-body">
+                <div class="info-grid">
+                    <!-- Employee ID -->
+                    {% if profile.employee_id %}
+                    <div class="info-item">
+                        <div class="info-icon employee">
+                            <i class="fas fa-id-badge"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Employee ID</p>
+                            <p class="info-value">{{ profile.employee_id }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Email -->
+                    {% if profile_user.email %}
+                    <div class="info-item">
+                        <div class="info-icon email">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Email</p>
+                            <p class="info-value">{{ profile_user.email }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Phone -->
+                    {% if profile.phone %}
+                    <div class="info-item">
+                        <div class="info-icon contact">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Phone</p>
+                            <p class="info-value">{{ profile.phone }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Department -->
+                    {% if profile.department %}
+                    <div class="info-item">
+                        <div class="info-icon department">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Department</p>
+                            <p class="info-value">{{ profile.department.name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Location -->
+                    {% if profile.location %}
+                    <div class="info-item">
+                        <div class="info-icon location">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Location</p>
+                            <p class="info-value">{{ profile.location.name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Assigned Assets -->
+                    {% if assigned_assets %}
+                    <div class="info-item">
+                        <div class="info-icon assets">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <div class="info-content">
+                            <p class="info-label">Assigned Assets ({{ assigned_assets|length }})</p>
+                            <div class="assets-list">
+                                {% for asset in assigned_assets %}
+                                <div class="asset-item">
+                                    <span class="asset-tag">{{ asset.asset_tag }}</span>
+                                    <span class="asset-name">{{ asset.name }}</span>
+                                    {% if asset.category %}
+                                        <span class="asset-category">{{ asset.category }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer-info">
+                <p class="footer-text">
+                    <span class="company-logo">A</span>
+                    Asset Management System - Public View
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

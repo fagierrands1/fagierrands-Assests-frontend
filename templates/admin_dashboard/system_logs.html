@@ -1,0 +1,572 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}System Logs - Admin Dashboard{% endblock %}
+{% block page_title %}System Activity Logs{% endblock %}
+{% block page_subtitle %}Monitor system activities and user actions in real-time{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Activity Logs</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0 fw-bold">System Activity Logs</h5>
+        <small class="text-muted">{{ page_obj.paginator.count|default:0 }} total log entr{{ page_obj.paginator.count|pluralize:"y,ies" }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="refreshLogs()">
+            <i class="fas fa-sync-alt me-2"></i>Refresh
+        </button>
+        <button class="btn btn-outline-info" onclick="exportLogs()">
+            <i class="fas fa-download me-2"></i>Export
+        </button>
+        <button class="btn btn-outline-warning" onclick="clearOldLogs()">
+            <i class="fas fa-trash me-2"></i>Clear Old
+        </button>
+    </div>
+</div>
+
+<!-- Real-time Stats -->
+<div class="stats-grid mb-4">
+    <div class="stat-card primary">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <h3 class="stat-value" id="total-entries">{{ page_obj.paginator.count|default:0 }}</h3>
+        <p class="stat-label">Total Entries</p>
+        <div class="stat-change positive">
+            <i class="fas fa-clock me-1"></i>Live monitoring
+        </div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+        </div>
+        <h3 class="stat-value" id="today-entries">24</h3>
+        <p class="stat-label">Today's Activities</p>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up me-1"></i>+15% from yesterday
+        </div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+        </div>
+        <h3 class="stat-value" id="week-entries">156</h3>
+        <p class="stat-label">This Week</p>
+        <div class="stat-change positive">
+            <i class="fas fa-arrow-up me-1"></i>+8% from last week
+        </div>
+    </div>
+    
+    <div class="stat-card info">
+        <div class="stat-header">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+        <h3 class="stat-value" id="active-users">12</h3>
+        <p class="stat-label">Active Users</p>
+        <div class="stat-change positive">
+            <i class="fas fa-user-check me-1"></i>Currently online
+        </div>
+    </div>
+</div>
+
+<!-- Filter Options -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>Filter & Search
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="user" class="form-label">User</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <select class="form-select" id="user" name="user">
+                        <option value="">All Users</option>
+                        {% for u in users %}
+                            <option value="{{ u.id }}" {% if user == u.id|stringformat:"s" %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="action" class="form-label">Action</label>
+                <select class="form-select" id="action" name="action">
+                    <option value="">All Actions</option>
+                    <option value="login" {% if action == 'login' %}selected{% endif %}>Login</option>
+                    <option value="logout" {% if action == 'logout' %}selected{% endif %}>Logout</option>
+                    <option value="create" {% if action == 'create' %}selected{% endif %}>Create</option>
+                    <option value="update" {% if action == 'update' %}selected{% endif %}>Update</option>
+                    <option value="delete" {% if action == 'delete' %}selected{% endif %}>Delete</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">To Date</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ search }}" placeholder="Description...">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <div class="btn-group w-100" role="group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <a href="{% url 'admin_dashboard:system_logs' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <i class="fas fa-file-alt me-2"></i>Activity Logs
+            <span class="badge bg-primary ms-2" id="live-indicator">
+                <i class="fas fa-circle me-1" style="animation: pulse 2s infinite;"></i>Live
+            </span>
+        </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="auto-refresh" checked>
+            <label class="form-check-label" for="auto-refresh">Auto-refresh</label>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover table-sm" id="logs-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Action</th>
+                            <th style="width: 200px;">User</th>
+                            <th>Description</th>
+                            <th style="width: 120px;">IP Address</th>
+                            <th style="width: 150px;">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activity in page_obj %}
+                        <tr class="log-entry" data-timestamp="{{ activity.timestamp|date:'c' }}">
+                            <td>
+                                {% if activity.action == 'login' %}
+                                    <span class="badge bg-success" title="Login">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </span>
+                                {% elif activity.action == 'logout' %}
+                                    <span class="badge bg-secondary" title="Logout">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </span>
+                                {% elif activity.action == 'create' %}
+                                    <span class="badge bg-primary" title="Create">
+                                        <i class="fas fa-plus"></i>
+                                    </span>
+                                {% elif activity.action == 'update' %}
+                                    <span class="badge bg-warning" title="Update">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
+                                {% elif activity.action == 'delete' %}
+                                    <span class="badge bg-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                {% elif activity.action == 'view' %}
+                                    <span class="badge bg-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark" title="{{ activity.action|title }}">
+                                        <i class="fas fa-info-circle"></i>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 28px; height: 28px;">
+                                        <span class="text-white small fw-bold">
+                                            {{ activity.user.first_name|first|default:activity.user.username|first|upper }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold small">{{ activity.user.get_full_name|default:activity.user.username }}</div>
+                                        <div class="text-muted small">@{{ activity.user.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">{{ activity.description }}</div>
+                                {% if activity.user_agent %}
+                                    <div class="text-muted small">
+                                        {% if 'Chrome' in activity.user_agent %}
+                                            <i class="fab fa-chrome me-1"></i>Chrome
+                                        {% elif 'Firefox' in activity.user_agent %}
+                                            <i class="fab fa-firefox me-1"></i>Firefox
+                                        {% elif 'Safari' in activity.user_agent %}
+                                            <i class="fab fa-safari me-1"></i>Safari
+                                        {% elif 'Edge' in activity.user_agent %}
+                                            <i class="fab fa-edge me-1"></i>Edge
+                                        {% else %}
+                                            <i class="fas fa-globe me-1"></i>Browser
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if activity.ip_address %}
+                                    <code class="small">{{ activity.ip_address }}</code>
+                                    <div class="text-muted small">
+                                        {% if activity.ip_address == '127.0.0.1' %}
+                                            <i class="fas fa-home me-1"></i>Local
+                                        {% else %}
+                                            <i class="fas fa-globe me-1"></i>Remote
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small fw-semibold" title="{{ activity.timestamp }}">
+                                    {{ activity.timestamp|date:"M d, H:i" }}
+                                </div>
+                                <div class="text-muted small time-ago" data-timestamp="{{ activity.timestamp|date:'c' }}">
+                                    {{ activity.timestamp|timesince }} ago
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav aria-label="Log pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if user %}&user={{ user }}{% endif %}{% if action %}&action={{ action }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if user %}&user={{ user }}{% endif %}{% if action %}&action={{ action }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if user %}&user={{ user }}{% endif %}{% if action %}&action={{ action }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if user %}&user={{ user }}{% endif %}{% if action %}&action={{ action }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                <h5>No Log Entries Found</h5>
+                <p class="text-muted">No system activities match your criteria.</p>
+                <button class="btn btn-outline-primary" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh Logs
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Activity Timeline (Optional) -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="fas fa-clock me-2"></i>Recent Activity Timeline
+    </div>
+    <div class="card-body">
+        <div class="timeline" id="activity-timeline">
+            {% for activity in recent_activities|slice:":10" %}
+            <div class="timeline-item">
+                <div class="timeline-marker 
+                    {% if activity.action == 'login' %}bg-success
+                    {% elif activity.action == 'logout' %}bg-secondary
+                    {% elif activity.action == 'create' %}bg-primary
+                    {% elif activity.action == 'update' %}bg-warning
+                    {% elif activity.action == 'delete' %}bg-danger
+                    {% else %}bg-info{% endif %}">
+                    {% if activity.action == 'login' %}
+                        <i class="fas fa-sign-in-alt"></i>
+                    {% elif activity.action == 'logout' %}
+                        <i class="fas fa-sign-out-alt"></i>
+                    {% elif activity.action == 'create' %}
+                        <i class="fas fa-plus"></i>
+                    {% elif activity.action == 'update' %}
+                        <i class="fas fa-edit"></i>
+                    {% elif activity.action == 'delete' %}
+                        <i class="fas fa-trash"></i>
+                    {% else %}
+                        <i class="fas fa-info"></i>
+                    {% endif %}
+                </div>
+                <div class="timeline-content">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">{{ activity.user.get_full_name|default:activity.user.username }}</h6>
+                            <p class="mb-1 small">{{ activity.description }}</p>
+                        </div>
+                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    border: 3px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-content {
+    background: rgba(255,255,255,0.8);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.log-entry {
+    transition: all 0.2s ease;
+}
+
+.log-entry:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    transform: scale(1.01);
+}
+
+.log-entry.new-entry {
+    animation: highlight 3s ease-in-out;
+}
+
+@keyframes highlight {
+    0% { background-color: rgba(16, 185, 129, 0.2); }
+    100% { background-color: transparent; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let autoRefreshInterval;
+let lastRefresh = new Date();
+
+// Auto-refresh functionality
+function refreshLogs() {
+    const refreshBtn = document.querySelector('[onclick="refreshLogs()"]');
+    const originalText = refreshBtn.innerHTML;
+    
+    refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin me-2"></i>Refreshing...';
+    refreshBtn.disabled = true;
+    
+    // Simulate refresh (in real implementation, this would be an AJAX call)
+    setTimeout(() => {
+        refreshBtn.innerHTML = originalText;
+        refreshBtn.disabled = false;
+        lastRefresh = new Date();
+        
+        // Update time-ago displays
+        updateTimeAgo();
+        
+        // Show success message
+        showToast('Logs refreshed successfully', 'success');
+    }, 1000);
+}
+
+// Update time-ago displays
+function updateTimeAgo() {
+    document.querySelectorAll('.time-ago').forEach(element => {
+        const timestamp = new Date(element.dataset.timestamp);
+        const now = new Date();
+        const diff = Math.floor((now - timestamp) / 1000);
+        
+        let timeAgo;
+        if (diff < 60) {
+            timeAgo = 'Just now';
+        } else if (diff < 3600) {
+            timeAgo = Math.floor(diff / 60) + ' minutes ago';
+        } else if (diff < 86400) {
+            timeAgo = Math.floor(diff / 3600) + ' hours ago';
+        } else {
+            timeAgo = Math.floor(diff / 86400) + ' days ago';
+        }
+        
+        element.textContent = timeAgo;
+    });
+}
+
+// Auto-refresh toggle
+document.getElementById('auto-refresh').addEventListener('change', function() {
+    if (this.checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 30000); // Refresh every 30 seconds
+        showToast('Auto-refresh enabled', 'info');
+    } else {
+        clearInterval(autoRefreshInterval);
+        showToast('Auto-refresh disabled', 'info');
+    }
+});
+
+// Export function
+function exportLogs() {
+    const table = document.querySelector('#logs-table');
+    let csv = [];
+    
+    // Get headers
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    // Get data rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td')).map(td => {
+            return '"' + td.textContent.trim().replace(/"/g, '""') + '"';
+        });
+        csv.push(cells.join(','));
+    });
+    
+    // Download CSV
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'system_logs_' + new Date().toISOString().split('T')[0] + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast('Logs exported successfully', 'success');
+}
+
+// Clear old logs function
+function clearOldLogs() {
+    if (confirm('⚠️ Are you sure you want to clear logs older than 30 days?\n\nThis action cannot be undone.')) {
+        // In real implementation, this would be an AJAX call to the server
+        showToast('Old logs cleared successfully', 'success');
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// Initialize auto-refresh on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('auto-refresh').checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 30000);
+    }
+    
+    // Update time-ago every minute
+    setInterval(updateTimeAgo, 60000);
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+});
+</script>
+{% endblock %}

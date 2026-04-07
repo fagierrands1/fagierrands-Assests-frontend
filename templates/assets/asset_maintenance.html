@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}Maintenance Records - {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Maintenance Records - {{ asset.asset_tag }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'asset_detail' asset.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Asset
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newMaintenanceModal">
+                <i class="fas fa-plus me-1"></i>Schedule Maintenance
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export Records
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Asset Summary -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ asset.name }}</h5>
+                        <p class="text-muted mb-0">
+                            {{ asset.model.manufacturer.name }} {{ asset.model.name }} | 
+                            Status: <span class="badge bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% elif asset.status == 'retired' %}danger{% else %}secondary{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <small class="text-muted">
+                            Last Maintenance: {% if last_maintenance %}{{ last_maintenance.completed_date|date:"M d, Y" }}{% else %}Never{% endif %}<br>
+                            Next Scheduled: {% if next_maintenance %}{{ next_maintenance.scheduled_date|date:"M d, Y" }}{% else %}None{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ total_maintenance }}</h4>
+                        <small class="text-muted">Total Records</small>
+                    </div>
+                    <i class="fas fa-tools fa-2x text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ completed_maintenance }}</h4>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ scheduled_maintenance }}</h4>
+                        <small class="text-muted">Scheduled</small>
+                    </div>
+                    <i class="fas fa-clock fa-2x text-warning"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">${{ total_cost|floatformat:2 }}</h4>
+                        <small class="text-muted">Total Cost</small>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-2x text-danger"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status_filter" class="form-label">Status</label>
+                <select class="form-select" id="status_filter" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                    <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type_filter" class="form-label">Type</label>
+                <select class="form-select" id="type_filter" name="maintenance_type">
+                    <option value="">All Types</option>
+                    <option value="preventive" {% if request.GET.maintenance_type == 'preventive' %}selected{% endif %}>Preventive</option>
+                    <option value="corrective" {% if request.GET.maintenance_type == 'corrective' %}selected{% endif %}>Corrective</option>
+                    <option value="emergency" {% if request.GET.maintenance_type == 'emergency' %}selected{% endif %}>Emergency</option>
+                    <option value="upgrade" {% if request.GET.maintenance_type == 'upgrade' %}selected{% endif %}>Upgrade</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">Date From</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label for="date_to" class="form-label">Date To</label>
+                <div class="input-group">
+                    <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.GET.date_to }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Maintenance Records -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Performed By</th>
+                        <th>Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for maintenance in maintenance_records %}
+                    <tr>
+                        <td>
+                            <strong>{{ maintenance.scheduled_date|date:"M d, Y" }}</strong><br>
+                            {% if maintenance.completed_date %}
+                            <small class="text-muted">Completed: {{ maintenance.completed_date|date:"M d, Y" }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ maintenance.title }}</strong>
+                            {% if maintenance.description %}
+                            <br><small class="text-muted">{{ maintenance.description|truncatewords:10 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if maintenance.maintenance_type == 'preventive' %}info{% elif maintenance.maintenance_type == 'corrective' %}warning{% elif maintenance.maintenance_type == 'emergency' %}danger{% else %}secondary{% endif %}">
+                                {{ maintenance.get_maintenance_type_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if maintenance.status == 'completed' %}success{% elif maintenance.status == 'in_progress' %}warning{% elif maintenance.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                {{ maintenance.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if maintenance.performed_by %}
+                                {{ maintenance.performed_by.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if maintenance.cost %}
+                                ${{ maintenance.cost }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#viewMaintenanceModal{{ maintenance.id }}" 
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if maintenance.status != 'completed' and maintenance.status != 'cancelled' %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#editMaintenanceModal{{ maintenance.id }}" 
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% endif %}
+                                {% if maintenance.status == 'scheduled' %}
+                                <button type="button" class="btn btn-outline-success btn-sm" 
+                                        onclick="updateMaintenanceStatus({{ maintenance.id }}, 'in_progress')" 
+                                        title="Start Maintenance">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                {% elif maintenance.status == 'in_progress' %}
+                                <button type="button" class="btn btn-outline-success btn-sm" 
+                                        onclick="updateMaintenanceStatus({{ maintenance.id }}, 'completed')" 
+                                        title="Complete Maintenance">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No maintenance records found.</p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMaintenanceModal">
+                                <i class="fas fa-plus me-1"></i>Schedule First Maintenance
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Maintenance pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals -->
+{% include 'assets/modals/new_maintenance_modal.html' %}
+
+{% for maintenance in maintenance_records %}
+    {% include 'assets/modals/view_maintenance_modal.html' with maintenance=maintenance %}
+    {% if maintenance.status != 'completed' and maintenance.status != 'cancelled' %}
+        {% include 'assets/modals/edit_maintenance_modal.html' with maintenance=maintenance %}
+    {% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateMaintenanceStatus(maintenanceId, newStatus) {
+    if (confirm('Are you sure you want to update the maintenance status?')) {
+        $.post('{% url "maintenance_update_status" %}', {
+            'maintenance_id': maintenanceId,
+            'status': newStatus,
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        })
+        .done(function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.message);
+            }
+        })
+        .fail(function() {
+            alert('An error occurred. Please try again.');
+        });
+    }
+}
+
+$(document).ready(function() {
+    // Auto-set date_to to today if date_from is selected
+    $('#date_from').on('change', function() {
+        if ($(this).val() && !$('#date_to').val()) {
+            $('#date_to').val(new Date().toISOString().split('T')[0]);
+        }
+    });
+});
+</script>
+{% endblock %}

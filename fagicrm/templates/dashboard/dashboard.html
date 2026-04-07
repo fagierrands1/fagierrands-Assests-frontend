@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - FAGI CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+        </div>
+    </div>
+
+    <!-- System Alerts -->
+    {% for alert in system_alerts %}
+    <div class="alert alert-{{ alert.alert_type }} alert-dismissible fade show" role="alert">
+        <strong>{{ alert.title }}</strong> {{ alert.message }}
+        {% if alert.is_dismissible %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card card-metric success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-muted">Total Revenue (30 days)</h6>
+                            <h3 class="text-success">${{ sales_summary.total_revenue|floatformat:2 }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-muted">Completed Requests</h6>
+                            <h3 class="text-primary">{{ sales_summary.completed_requests }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card card-metric warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-muted">Pending Requests</h6>
+                            <h3 class="text-warning">{{ sales_summary.pending_requests }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-muted">New Leads</h6>
+                            <h3 class="text-info">{{ sales_summary.new_leads }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-plus fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Data Row -->
+    <div class="row mb-4">
+        <!-- Activity Summary -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Activity Summary (30 days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Summary -->
+        {% if kpi_summary %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">My Performance (Current Month)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ kpi_summary.overall_score|floatformat:1 }}%</h4>
+                            <small class="text-muted">Overall Score</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ kpi_summary.sales_target_achievement|floatformat:1 }}%</h4>
+                            <small class="text-muted">Sales Target</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ kpi_summary.activity_target_achievement|floatformat:1 }}%</h4>
+                            <small class="text-muted">Activity Target</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5>${{ kpi_summary.revenue_generated|floatformat:2 }}</h5>
+                            <small class="text-muted">Revenue Generated</small>
+                        </div>
+                        <div class="col-6">
+                            <h5>{{ kpi_summary.customer_satisfaction|floatformat:1 }}/5.0</h5>
+                            <small class="text-muted">Customer Satisfaction</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lists Row -->
+    <div class="row">
+        <!-- Upcoming Tasks -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Upcoming Tasks</h5>
+                    <a href="/admin/tracking/task/" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% for task in upcoming_tasks %}
+                    <div class="list-group-item list-group-item-action border-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ task.title }}</h6>
+                            <small class="{% if task.is_overdue %}text-danger{% else %}text-muted{% endif %}">
+                                {{ task.due_date|date:"M d" }}
+                            </small>
+                        </div>
+                        <p class="mb-1 text-muted small">{{ task.description|truncatechars:50 }}</p>
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center p-3 text-muted">
+                        <i class="fas fa-tasks fa-2x mb-2"></i>
+                        <p>No upcoming tasks</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Customers -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Customers</h5>
+                    <a href="/admin/customers/customer/" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% for customer in recent_customers %}
+                    <div class="list-group-item list-group-item-action border-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ customer.full_name }}</h6>
+                            <small class="text-muted">{{ customer.created_at|timesince }} ago</small>
+                        </div>
+                        {% if customer.company_name %}
+                        <p class="mb-1 text-muted small">{{ customer.company_name }}</p>
+                        {% endif %}
+                        <small class="text-muted">{{ customer.email }}</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center p-3 text-muted">
+                        <i class="fas fa-users fa-2x mb-2"></i>
+                        <p>No recent customers</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Leads -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Leads</h5>
+                    <a href="/admin/customers/lead/" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% for lead in recent_leads %}
+                    <div class="list-group-item list-group-item-action border-0">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ lead.full_name }}</h6>
+                            <span class="badge bg-{% if lead.status == 'new' %}primary{% elif lead.status == 'contacted' %}info{% elif lead.status == 'won' %}success{% else %}secondary{% endif %}">
+                                {{ lead.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="mb-1 text-muted small">{{ lead.interested_services|truncatechars:40 }}</p>
+                        <small class="text-muted">{{ lead.source|title }} • {{ lead.created_at|timesince }} ago</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center p-3 text-muted">
+                        <i class="fas fa-user-plus fa-2x mb-2"></i>
+                        <p>No recent leads</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Activity Chart
+const activityCtx = document.getElementById('activityChart').getContext('2d');
+new Chart(activityCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Calls', 'Emails', 'Meetings', 'Tasks'],
+        datasets: [{
+            data: [
+                {{ activity_summary.total_calls }},
+                {{ activity_summary.total_emails }},
+                {{ activity_summary.total_meetings }},
+                {{ activity_summary.total_tasks }}
+            ],
+            backgroundColor: [
+                '#007bff',
+                '#28a745',
+                '#ffc107',
+                '#dc3545'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

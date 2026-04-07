@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Assets - Asset Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Assets</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'admin:assets_asset_add' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i>Add Asset
+            </a>
+            <a href="{% url 'bulk_label_print' %}" class="btn btn-sm btn-success" target="_blank">
+                <i class="fas fa-print me-1"></i>Bulk Print Labels
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="maintenance" {% if request.GET.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                    <option value="retired" {% if request.GET.status == 'retired' %}selected{% endif %}>Retired</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="location" class="form-label">Location</label>
+                <select class="form-select" id="location" name="location">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                    <option value="{{ location.id }}" {% if request.GET.location == location.id|stringformat:"s" %}selected{% endif %}>
+                        {{ location.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="department" class="form-label">Department</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">All Departments</option>
+                    {% for department in departments %}
+                    <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>
+                        {{ department.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Asset tag, name..." value="{{ request.GET.search }}">
+                    <button class="btn btn-outline-secondary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assets Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="assetsTable">
+                <thead>
+                    <tr>
+                        <th>Asset Tag</th>
+                        <th>Name</th>
+                        <th>Model</th>
+                        <th>Status</th>
+                        <th>Assigned To</th>
+                        <th>Location</th>
+                        <th>Department</th>
+                        <th>Last Seen</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'asset_detail' asset.id %}" class="text-decoration-none">
+                                <strong>{{ asset.asset_tag }}</strong>
+                            </a>
+                        </td>
+                        <td>{{ asset.name }}</td>
+                        <td>
+                            <small class="text-muted">{{ asset.model.manufacturer.name }}</small><br>
+                            {{ asset.model.name }}
+                        </td>
+                        <td>
+                            <span class="badge status-badge bg-{% if asset.status == 'active' %}success{% elif asset.status == 'maintenance' %}warning{% elif asset.status == 'retired' %}danger{% else %}secondary{% endif %}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if asset.assigned_to %}
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user me-2 text-muted"></i>
+                                    <div>
+                                        <strong>{{ asset.assigned_to.get_full_name }}</strong><br>
+                                        <small class="text-muted">{{ asset.assigned_to.email }}</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if asset.location %}
+                                <i class="fas fa-map-marker-alt me-1 text-muted"></i>
+                                {{ asset.location.name }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if asset.department %}
+                                <i class="fas fa-building me-1 text-muted"></i>
+                                {{ asset.department.name }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if asset.last_seen %}
+                                <small>{{ asset.last_seen|date:"M d, Y H:i" }}</small>
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'asset_detail' asset.id %}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'admin:assets_asset_change' asset.id %}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No assets found matching your criteria.</p>
+                            <a href="{% url 'admin:assets_asset_add' %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Add First Asset
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Assets pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if request.GET.department %}department={{ request.GET.department }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if request.GET.department %}department={{ request.GET.department }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.location %}location={{ request.GET.location }}&{% endif %}{% if request.GET.department %}department={{ request.GET.department }}&{% endif %}{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTable if not using Django pagination
+    // $('#assetsTable').DataTable({
+    //     "pageLength": 25,
+    //     "order": [[ 0, "asc" ]],
+    //     "columnDefs": [
+    //         { "orderable": false, "targets": -1 }
+    //     ]
+    // });
+});
+</script>
+{% endblock %}
